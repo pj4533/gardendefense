@@ -1,4 +1,4 @@
-import { put, list } from '@vercel/blob';
+import { put, list, get } from '@vercel/blob';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 interface LeaderboardEntry {
@@ -16,9 +16,10 @@ async function readEntries(seed: number): Promise<LeaderboardEntry[]> {
   try {
     const { blobs } = await list({ prefix: blobKey(seed) });
     if (blobs.length === 0) return [];
-    const res = await fetch(blobs[0].url);
-    if (!res.ok) return [];
-    const data = await res.json();
+    const resp = await get(blobs[0].url, { access: 'private' });
+    if (!resp) return [];
+    const text = await new Response(resp.stream).text();
+    const data = JSON.parse(text);
     return Array.isArray(data) ? data : [];
   } catch {
     return [];
@@ -27,7 +28,7 @@ async function readEntries(seed: number): Promise<LeaderboardEntry[]> {
 
 async function writeEntries(seed: number, entries: LeaderboardEntry[]): Promise<void> {
   await put(blobKey(seed), JSON.stringify(entries), {
-    access: 'public',
+    access: 'private',
     addRandomSuffix: false,
   });
 }
