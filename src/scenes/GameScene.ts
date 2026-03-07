@@ -6,9 +6,10 @@ import { TowerType, CellType } from '../types';
 import {
   TILE_SIZE, GRID_COLS, GRID_ROWS, GAME_HEIGHT,
   STARTING_MONEY, STARTING_LIVES,
-  WAVES, TOWER_CONFIGS,
+  TOWER_CONFIGS,
 } from '../config';
 import { generateRandomPath } from '../logic/MapGenerator';
+import { generateWave } from '../logic/WaveGenerator';
 
 // Map tower types to spritesheet keys and animation config
 const TOWER_SPRITE: Record<string, { key: string; idle: string }> = {
@@ -35,6 +36,7 @@ export class GameScene extends Phaser.Scene {
   private moneyText!: Phaser.GameObjects.Text;
   private livesText!: Phaser.GameObjects.Text;
   private waveText!: Phaser.GameObjects.Text;
+  private scoreText!: Phaser.GameObjects.Text;
   private messageText!: Phaser.GameObjects.Text;
 
   private ladybugBtn!: Phaser.GameObjects.Text;
@@ -49,6 +51,9 @@ export class GameScene extends Phaser.Scene {
   private dragGhostCol: number = 0;
   private dragGhostRow: number = 0;
   private pointerDown: boolean = false;
+
+  private gameOverTriggered: boolean = false;
+  private gameOverTimer: number = 0;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -78,10 +83,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Reset state for restarts
+    this.towerSprites = new Map();
+    this.enemySprites = new Map();
+    this.selectedTower = null;
+    this.dragTower = null;
+    this.isDragging = false;
+    this.pointerDown = false;
+    this.gameOverTriggered = false;
+    this.gameOverTimer = 0;
+
     const waypoints = generateRandomPath(GRID_COLS, GRID_ROWS);
     this.engine = new GameEngine(
       GRID_COLS, GRID_ROWS, TILE_SIZE,
-      waypoints, WAVES,
+      waypoints, generateWave,
       STARTING_MONEY, STARTING_LIVES,
     );
 
@@ -183,6 +198,7 @@ export class GameScene extends Phaser.Scene {
     this.moneyText = this.add.text(10, uiY, '', textStyle);
     this.livesText = this.add.text(160, uiY, '', textStyle);
     this.waveText = this.add.text(300, uiY, '', textStyle);
+    this.scoreText = this.add.text(420, uiY, '', textStyle);
 
     const btnY = uiY + 30;
 
@@ -328,6 +344,15 @@ export class GameScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     const dt = delta / 1000;
+
+    if (this.gameOverTriggered) {
+      this.gameOverTimer -= dt;
+      if (this.gameOverTimer <= 0) {
+        this.scene.start('GameOverScene', { score: this.engine.state.score });
+      }
+      return;
+    }
+
     this.engine.update(dt);
 
     if (this.selectedTower && !this.engine.towers.includes(this.selectedTower)) {
@@ -339,6 +364,13 @@ export class GameScene extends Phaser.Scene {
     this.syncEnemySprites();
     this.drawOverlays();
     this.updateUI();
+
+    if (this.engine.state.gameOver && !this.gameOverTriggered) {
+      this.gameOverTriggered = true;
+      this.gameOverTimer = 1.5;
+      this.messageText.setText('GARDEN DESTROYED!');
+      this.messageText.setColor('#ff4444');
+    }
   }
 
   private syncTowerSprites(): void {
@@ -466,16 +498,7 @@ export class GameScene extends Phaser.Scene {
   private updateUI(): void {
     this.moneyText.setText(`Money: $${this.engine.state.money}`);
     this.livesText.setText(`Lives: ${this.engine.state.lives}`);
-    this.waveText.setText(
-      `Wave: ${this.engine.waveManager.currentWave}/${this.engine.waveManager.totalWaves}`
-    );
-
-    if (this.engine.state.gameOver) {
-      this.messageText.setText('GARDEN DESTROYED!');
-      this.messageText.setColor('#ff4444');
-    } else if (this.engine.state.victory) {
-      this.messageText.setText('GARDEN SAVED!');
-      this.messageText.setColor('#44ff44');
-    }
+    this.waveText.setText(`Wave: ${this.engine.waveManager.currentWave}`);
+    this.scoreText.setText(`Score: ${this.engine.state.score}`);
   }
 }

@@ -1,5 +1,5 @@
 import { TowerType, WaveConfig, GridPosition } from '../types';
-import { TOWER_CONFIGS, SELL_REFUND_RATE } from '../config';
+import { TOWER_CONFIGS, SELL_REFUND_RATE, WAVE_CLEAR_BONUS } from '../config';
 import { GameState } from './GameState';
 import { GameMap } from './GameMap';
 import { Enemy } from './Enemy';
@@ -14,23 +14,24 @@ export class GameEngine {
   enemies: Enemy[] = [];
   towers: Tower[] = [];
   projectiles: Projectile[] = [];
+  private waveInProgress: boolean = false;
 
   constructor(
     cols: number,
     rows: number,
     tileSize: number,
     waypoints: GridPosition[],
-    waves: WaveConfig[],
+    waveGenerator: (n: number) => WaveConfig,
     startingMoney: number,
     startingLives: number,
   ) {
     this.map = new GameMap(cols, rows, tileSize, waypoints);
     this.state = new GameState(startingMoney, startingLives);
-    this.waveManager = new WaveManager(waves);
+    this.waveManager = new WaveManager(waveGenerator);
   }
 
   update(dt: number): void {
-    if (this.state.gameOver || this.state.victory) return;
+    if (this.state.gameOver) return;
     dt = Math.min(dt, 0.1);
 
     // 1. Spawn enemies
@@ -39,6 +40,7 @@ export class GameEngine {
       const path = this.map.getPathWorldPositions();
       const start = path[0];
       this.enemies.push(new Enemy(spawnedConfig, start.x, start.y));
+      this.waveInProgress = true;
     }
 
     // 2. Move enemies
@@ -69,10 +71,11 @@ export class GameEngine {
       proj.update(dt);
     }
 
-    // 6. Collect rewards for killed enemies (not reached-end ones)
+    // 6. Collect rewards and score for killed enemies (not reached-end ones)
     for (const enemy of this.enemies) {
       if (!enemy.alive && !enemy.reachedEnd) {
         this.state.earn(enemy.reward);
+        this.state.addScore(enemy.reward);
       }
     }
 
@@ -80,13 +83,15 @@ export class GameEngine {
     this.enemies = this.enemies.filter(e => e.alive);
     this.projectiles = this.projectiles.filter(p => p.alive);
 
-    // 8. Check victory
+    // 8. Wave-clear bonus
     if (
-      this.waveManager.allWavesComplete &&
+      this.waveInProgress &&
       !this.waveManager.spawning &&
       this.enemies.length === 0
     ) {
-      this.state.win();
+      const bonus = this.waveManager.currentWave * WAVE_CLEAR_BONUS;
+      this.state.addScore(bonus);
+      this.waveInProgress = false;
     }
   }
 

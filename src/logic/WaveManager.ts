@@ -1,28 +1,21 @@
 import { EnemyConfig, WaveConfig } from '../types';
 
 export class WaveManager {
-  readonly waves: WaveConfig[];
+  private waveGenerator: (n: number) => WaveConfig;
+  private currentWaveConfig: WaveConfig | null = null;
   currentWave: number = 0;
   spawning: boolean = false;
   spawnTimer: number = 0;
   currentGroupIndex: number = 0;
   currentEnemyIndex: number = 0;
-  allWavesComplete: boolean = false;
 
-  constructor(waves: WaveConfig[]) {
-    this.waves = waves;
-  }
-
-  get totalWaves(): number {
-    return this.waves.length;
+  constructor(waveGenerator: (n: number) => WaveConfig) {
+    this.waveGenerator = waveGenerator;
   }
 
   startWave(): boolean {
     if (this.spawning) return false;
-    if (this.currentWave >= this.waves.length) {
-      this.allWavesComplete = true;
-      return false;
-    }
+    this.currentWaveConfig = this.waveGenerator(this.currentWave);
     this.spawning = true;
     this.spawnTimer = 0;
     this.currentGroupIndex = 0;
@@ -31,15 +24,12 @@ export class WaveManager {
   }
 
   update(dt: number): EnemyConfig | null {
-    if (!this.spawning) return null;
+    if (!this.spawning || !this.currentWaveConfig) return null;
 
-    const wave = this.waves[this.currentWave];
+    const wave = this.currentWaveConfig;
     if (this.currentGroupIndex >= wave.enemies.length) {
       this.spawning = false;
       this.currentWave++;
-      if (this.currentWave >= this.waves.length) {
-        this.allWavesComplete = true;
-      }
       return null;
     }
 

@@ -14,16 +14,20 @@ const waypoints: GridPosition[] = [
   { col: 7, row: 2 },
 ];
 
-const singleWave: WaveConfig[] = [
-  { enemies: [{ config: basicEnemy, count: 2, spawnInterval: 0.5 }] },
-];
+const singleWave: WaveConfig = {
+  enemies: [{ config: basicEnemy, count: 2, spawnInterval: 0.5 }],
+};
+
+function singleWaveGenerator(_n: number): WaveConfig {
+  return singleWave;
+}
 
 function createEngine(
-  waves: WaveConfig[] = singleWave,
+  generator: (n: number) => WaveConfig = singleWaveGenerator,
   money: number = 200,
   lives: number = 10,
 ): GameEngine {
-  return new GameEngine(COLS, ROWS, TILE, waypoints, waves, money, lives);
+  return new GameEngine(COLS, ROWS, TILE, waypoints, generator, money, lives);
 }
 
 describe('GameEngine', () => {
@@ -31,6 +35,7 @@ describe('GameEngine', () => {
     const engine = createEngine();
     expect(engine.state.money).toBe(200);
     expect(engine.state.lives).toBe(10);
+    expect(engine.state.score).toBe(0);
     expect(engine.enemies).toHaveLength(0);
     expect(engine.towers).toHaveLength(0);
     expect(engine.projectiles).toHaveLength(0);
@@ -45,7 +50,7 @@ describe('GameEngine', () => {
     });
 
     it('fails if cannot afford', () => {
-      const engine = createEngine(singleWave, 10);
+      const engine = createEngine(singleWaveGenerator, 10);
       expect(engine.placeTower(0, 0, TowerType.LADYBUG)).toBe(false);
       expect(engine.towers).toHaveLength(0);
     });
@@ -85,19 +90,10 @@ describe('GameEngine', () => {
       expect(engine.enemies).toHaveLength(0);
     });
 
-    it('does nothing when victory', () => {
-      const engine = createEngine();
-      engine.state.victory = true;
-      engine.startNextWave();
-      engine.update(1.0);
-      expect(engine.enemies).toHaveLength(0);
-    });
-
     it('caps dt at 0.1', () => {
       const engine = createEngine();
       engine.startNextWave();
       engine.update(10.0); // huge dt gets capped
-      // Should not cause extreme movement
       expect(engine.enemies.length).toBeGreaterThanOrEqual(0);
     });
 
@@ -121,7 +117,6 @@ describe('GameEngine', () => {
       const engine = createEngine();
       engine.startNextWave();
       engine.update(0.016); // spawn
-      // Move enemy to end
       for (let i = 0; i < 100; i++) {
         engine.update(0.1);
       }
@@ -129,60 +124,60 @@ describe('GameEngine', () => {
     });
 
     it('towers fire at enemies in range', () => {
-      const weakWave: WaveConfig[] = [
-        { enemies: [{ config: weakEnemy, count: 1, spawnInterval: 1.0 }] },
-      ];
-      const engine = createEngine(weakWave);
-      // Place tower adjacent to path
+      const weakWaveGen = (_n: number): WaveConfig => ({
+        enemies: [{ config: weakEnemy, count: 1, spawnInterval: 1.0 }],
+      });
+      const engine = createEngine(weakWaveGen);
       engine.placeTower(3, 1, TowerType.LADYBUG);
       engine.startNextWave();
       engine.update(0.016); // spawn enemy
-      // Move enemy into range
       for (let i = 0; i < 20; i++) {
         engine.update(0.05);
       }
-      // Tower should have created projectiles
       expect(engine.projectiles.length + engine.towers[0].cooldown).toBeGreaterThan(0);
     });
 
-    it('earns reward when enemy is killed', () => {
+    it('earns reward and score when enemy is killed', () => {
       const oneHpEnemy: EnemyConfig = { health: 1, speed: 50, reward: 99, color: 0xff0000 };
-      const wave: WaveConfig[] = [
-        { enemies: [{ config: oneHpEnemy, count: 1, spawnInterval: 1.0 }] },
-      ];
-      const engine = createEngine(wave, 200, 10);
+      const gen = (_n: number): WaveConfig => ({
+        enemies: [{ config: oneHpEnemy, count: 1, spawnInterval: 1.0 }],
+      });
+      const engine = createEngine(gen, 200, 10);
       engine.placeTower(2, 1, TowerType.LADYBUG);
       engine.startNextWave();
 
       const initialMoney = engine.state.money;
-      // Run until enemy dies
       for (let i = 0; i < 100; i++) {
         engine.update(0.05);
       }
       expect(engine.state.money).toBeGreaterThan(initialMoney);
+      expect(engine.state.score).toBeGreaterThan(0);
     });
 
-    it('triggers victory after all waves complete and enemies cleared', () => {
+    it('awards wave-clear bonus when all enemies are dead', () => {
       const oneHpEnemy: EnemyConfig = { health: 1, speed: 50, reward: 5, color: 0xff0000 };
-      const wave: WaveConfig[] = [
-        { enemies: [{ config: oneHpEnemy, count: 1, spawnInterval: 1.0 }] },
-      ];
-      const engine = createEngine(wave, 200, 10);
+      const gen = (_n: number): WaveConfig => ({
+        enemies: [{ config: oneHpEnemy, count: 1, spawnInterval: 1.0 }],
+      });
+      const engine = createEngine(gen, 200, 10);
       engine.placeTower(2, 1, TowerType.LADYBUG);
       engine.startNextWave();
 
       for (let i = 0; i < 200; i++) {
         engine.update(0.05);
       }
-      expect(engine.state.victory).toBe(true);
+      // Score should include kill reward + wave clear bonus
+      // Wave clear bonus = waveManager.currentWave * WAVE_CLEAR_BONUS
+      // After wave 0 clears, currentWave becomes 1, so bonus = 1 * 100 = 100
+      expect(engine.state.score).toBeGreaterThanOrEqual(100);
     });
 
     it('cleans up dead enemies and projectiles', () => {
       const oneHpEnemy: EnemyConfig = { health: 1, speed: 50, reward: 5, color: 0xff0000 };
-      const wave: WaveConfig[] = [
-        { enemies: [{ config: oneHpEnemy, count: 1, spawnInterval: 1.0 }] },
-      ];
-      const engine = createEngine(wave, 200, 10);
+      const gen = (_n: number): WaveConfig => ({
+        enemies: [{ config: oneHpEnemy, count: 1, spawnInterval: 1.0 }],
+      });
+      const engine = createEngine(gen, 200, 10);
       engine.placeTower(2, 1, TowerType.LADYBUG);
       engine.startNextWave();
 

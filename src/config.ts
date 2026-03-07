@@ -1,4 +1,4 @@
-import { TowerType, TowerConfig, EnemyConfig, WaveConfig, GridPosition } from './types';
+import { TowerType, TowerConfig, EnemyConfig, GridPosition } from './types';
 
 export const TILE_SIZE = 48;
 export const GRID_COLS = 16;
@@ -10,8 +10,12 @@ export const CANVAS_WIDTH = GAME_WIDTH;
 export const CANVAS_HEIGHT = GAME_HEIGHT + UI_HEIGHT;
 
 export const STARTING_MONEY = 100;
-export const STARTING_LIVES = 20;
+export const STARTING_LIVES = 5;
 export const SELL_REFUND_RATE = 1.0; // 100% refund
+
+export const LEADERBOARD_KEY = 'gardendefense_leaderboard';
+export const LEADERBOARD_MAX_ENTRIES = 10;
+export const WAVE_CLEAR_BONUS = 100;
 
 export const TOWER_CONFIGS: Record<TowerType, TowerConfig> = {
   [TowerType.LADYBUG]: {
@@ -46,28 +50,4 @@ export const PATH_WAYPOINTS: GridPosition[] = [
   { col: 10, row: 5 },
   { col: 10, row: 2 },
   { col: 15, row: 2 },
-];
-
-export const WAVES: WaveConfig[] = [
-  { enemies: [{ config: ENEMY_CONFIGS.aphid, count: 5, spawnInterval: 1.0 }] },
-  { enemies: [{ config: ENEMY_CONFIGS.aphid, count: 8, spawnInterval: 0.8 }] },
-  {
-    enemies: [
-      { config: ENEMY_CONFIGS.aphid, count: 5, spawnInterval: 0.8 },
-      { config: ENEMY_CONFIGS.ant, count: 3, spawnInterval: 0.6 },
-    ],
-  },
-  {
-    enemies: [
-      { config: ENEMY_CONFIGS.ant, count: 8, spawnInterval: 0.5 },
-      { config: ENEMY_CONFIGS.beetle, count: 2, spawnInterval: 1.5 },
-    ],
-  },
-  {
-    enemies: [
-      { config: ENEMY_CONFIGS.aphid, count: 10, spawnInterval: 0.5 },
-      { config: ENEMY_CONFIGS.ant, count: 5, spawnInterval: 0.4 },
-      { config: ENEMY_CONFIGS.beetle, count: 3, spawnInterval: 1.0 },
-    ],
-  },
 ];
