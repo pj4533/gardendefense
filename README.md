@@ -1,12 +1,12 @@
-# Cyberpunk Tower Defense
+# Garden Defense
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?logo=typescript)
 ![Phaser](https://img.shields.io/badge/Phaser-3.80-blueviolet?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTEyIDJMMiAyMmgyMEwxMiAyeiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=)
-![Tests](https://img.shields.io/badge/tests-84%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-101%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-A browser-based tower defense game built with Phaser 3 and TypeScript. Currently using placeholder graphics — cyberpunk tileset coming soon.
+Defend your garden from pest invasions! A browser-based tower defense game built with Phaser 3 and TypeScript. Plant trees that house beneficial predators to fight off waves of garden pests.
 
 ## Play
 
@@ -15,20 +15,20 @@ npm install
 npm run dev
 ```
 
-Open the URL Vite gives you. Place towers on the dark grid cells, then hit **Start Wave**.
+Open the URL Vite gives you. Place towers on the soil cells, then hit **Start Wave**.
 
 ## How to Play
 
-- **Select a tower** at the bottom (Basic or Sniper)
+- **Select a tower** at the bottom (Ladybug or Mantis)
 - **Click empty cells** to place towers (costs money)
-- **Start Wave** to send enemies down the path
-- Enemies follow the gray path — kill them before they reach the end
-- Survive all 5 waves to win
+- **Start Wave** to send pests down the path
+- Pests follow the dirt path — eliminate them before they destroy your garden
+- Survive all 5 waves to save your garden
 
-| Tower | Cost | Damage | Fire Rate | Range |
-|-------|------|--------|-----------|-------|
-| Basic | $25 | 10 | Fast | Short |
-| Sniper | $50 | 40 | Slow | Long |
+| Tower | Cost | Damage | Fire Rate | Range | Predator |
+|-------|------|--------|-----------|-------|----------|
+| Ladybug Tree | $25 | 10 | Fast | Short | Ladybugs — classic aphid hunters |
+| Mantis Tree | $50 | 40 | Slow | Long | Praying mantises — apex garden predators |
 
 ## Scripts
 

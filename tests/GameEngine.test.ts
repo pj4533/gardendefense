@@ -39,31 +39,31 @@ describe('GameEngine', () => {
   describe('placeTower', () => {
     it('places a tower on empty cell', () => {
       const engine = createEngine();
-      expect(engine.placeTower(0, 0, TowerType.BASIC)).toBe(true);
+      expect(engine.placeTower(0, 0, TowerType.LADYBUG)).toBe(true);
       expect(engine.towers).toHaveLength(1);
       expect(engine.state.money).toBe(175); // 200 - 25
     });
 
     it('fails if cannot afford', () => {
       const engine = createEngine(singleWave, 10);
-      expect(engine.placeTower(0, 0, TowerType.BASIC)).toBe(false);
+      expect(engine.placeTower(0, 0, TowerType.LADYBUG)).toBe(false);
       expect(engine.towers).toHaveLength(0);
     });
 
     it('fails on path cell', () => {
       const engine = createEngine();
-      expect(engine.placeTower(3, 2, TowerType.BASIC)).toBe(false);
+      expect(engine.placeTower(3, 2, TowerType.LADYBUG)).toBe(false);
     });
 
     it('fails on occupied cell', () => {
       const engine = createEngine();
-      engine.placeTower(0, 0, TowerType.BASIC);
-      expect(engine.placeTower(0, 0, TowerType.BASIC)).toBe(false);
+      engine.placeTower(0, 0, TowerType.LADYBUG);
+      expect(engine.placeTower(0, 0, TowerType.LADYBUG)).toBe(false);
     });
 
     it('places sniper tower', () => {
       const engine = createEngine();
-      expect(engine.placeTower(0, 0, TowerType.SNIPER)).toBe(true);
+      expect(engine.placeTower(0, 0, TowerType.MANTIS)).toBe(true);
       expect(engine.state.money).toBe(150); // 200 - 50
     });
   });
@@ -134,7 +134,7 @@ describe('GameEngine', () => {
       ];
       const engine = createEngine(weakWave);
       // Place tower adjacent to path
-      engine.placeTower(3, 1, TowerType.BASIC);
+      engine.placeTower(3, 1, TowerType.LADYBUG);
       engine.startNextWave();
       engine.update(0.016); // spawn enemy
       // Move enemy into range
@@ -151,7 +151,7 @@ describe('GameEngine', () => {
         { enemies: [{ config: oneHpEnemy, count: 1, spawnInterval: 1.0 }] },
       ];
       const engine = createEngine(wave, 200, 10);
-      engine.placeTower(2, 1, TowerType.BASIC);
+      engine.placeTower(2, 1, TowerType.LADYBUG);
       engine.startNextWave();
 
       const initialMoney = engine.state.money;
@@ -168,7 +168,7 @@ describe('GameEngine', () => {
         { enemies: [{ config: oneHpEnemy, count: 1, spawnInterval: 1.0 }] },
       ];
       const engine = createEngine(wave, 200, 10);
-      engine.placeTower(2, 1, TowerType.BASIC);
+      engine.placeTower(2, 1, TowerType.LADYBUG);
       engine.startNextWave();
 
       for (let i = 0; i < 200; i++) {
@@ -183,7 +183,7 @@ describe('GameEngine', () => {
         { enemies: [{ config: oneHpEnemy, count: 1, spawnInterval: 1.0 }] },
       ];
       const engine = createEngine(wave, 200, 10);
-      engine.placeTower(2, 1, TowerType.BASIC);
+      engine.placeTower(2, 1, TowerType.LADYBUG);
       engine.startNextWave();
 
       for (let i = 0; i < 200; i++) {
@@ -197,7 +197,7 @@ describe('GameEngine', () => {
   describe('getTowerAt', () => {
     it('returns tower at position', () => {
       const engine = createEngine();
-      engine.placeTower(0, 0, TowerType.BASIC);
+      engine.placeTower(0, 0, TowerType.LADYBUG);
       const tower = engine.getTowerAt(0, 0);
       expect(tower).not.toBeNull();
       expect(tower!.col).toBe(0);
@@ -218,7 +218,7 @@ describe('GameEngine', () => {
   describe('removeTower', () => {
     it('removes tower and returns refund amount', () => {
       const engine = createEngine();
-      engine.placeTower(0, 0, TowerType.BASIC);
+      engine.placeTower(0, 0, TowerType.LADYBUG);
       expect(engine.state.money).toBe(175);
       const refund = engine.removeTower(0, 0);
       expect(refund).toBe(25);
@@ -228,7 +228,7 @@ describe('GameEngine', () => {
 
     it('updates map grid cell back to EMPTY', () => {
       const engine = createEngine();
-      engine.placeTower(0, 0, TowerType.BASIC);
+      engine.placeTower(0, 0, TowerType.LADYBUG);
       expect(engine.map.getCell(0, 0)).toBe(CellType.TOWER);
       engine.removeTower(0, 0);
       expect(engine.map.getCell(0, 0)).toBe(CellType.EMPTY);
@@ -241,7 +241,7 @@ describe('GameEngine', () => {
 
     it('handles sniper refund correctly', () => {
       const engine = createEngine();
-      engine.placeTower(0, 0, TowerType.SNIPER);
+      engine.placeTower(0, 0, TowerType.MANTIS);
       expect(engine.state.money).toBe(150);
       const refund = engine.removeTower(0, 0);
       expect(refund).toBe(50);
@@ -250,18 +250,18 @@ describe('GameEngine', () => {
 
     it('allows placing new tower after removal', () => {
       const engine = createEngine();
-      engine.placeTower(0, 0, TowerType.BASIC);
+      engine.placeTower(0, 0, TowerType.LADYBUG);
       engine.removeTower(0, 0);
-      expect(engine.placeTower(0, 0, TowerType.SNIPER)).toBe(true);
+      expect(engine.placeTower(0, 0, TowerType.MANTIS)).toBe(true);
       expect(engine.towers).toHaveLength(1);
-      expect(engine.towers[0].type).toBe(TowerType.SNIPER);
+      expect(engine.towers[0].type).toBe(TowerType.MANTIS);
     });
   });
 
   describe('moveTower', () => {
     it('moves tower to new empty cell', () => {
       const engine = createEngine();
-      engine.placeTower(0, 0, TowerType.BASIC);
+      engine.placeTower(0, 0, TowerType.LADYBUG);
       expect(engine.moveTower(0, 0, 1, 0)).toBe(true);
       expect(engine.getTowerAt(0, 0)).toBeNull();
       expect(engine.getTowerAt(1, 0)).not.toBeNull();
@@ -269,7 +269,7 @@ describe('GameEngine', () => {
 
     it('updates tower pixel coordinates', () => {
       const engine = createEngine();
-      engine.placeTower(0, 0, TowerType.BASIC);
+      engine.placeTower(0, 0, TowerType.LADYBUG);
       engine.moveTower(0, 0, 1, 0);
       const tower = engine.getTowerAt(1, 0)!;
       expect(tower.x).toBe(1 * TILE + TILE / 2);
@@ -278,7 +278,7 @@ describe('GameEngine', () => {
 
     it('updates map grid cells', () => {
       const engine = createEngine();
-      engine.placeTower(0, 0, TowerType.BASIC);
+      engine.placeTower(0, 0, TowerType.LADYBUG);
       engine.moveTower(0, 0, 1, 0);
       expect(engine.map.getCell(0, 0)).toBe(CellType.EMPTY);
       expect(engine.map.getCell(1, 0)).toBe(CellType.TOWER);
@@ -286,7 +286,7 @@ describe('GameEngine', () => {
 
     it('does not change money', () => {
       const engine = createEngine();
-      engine.placeTower(0, 0, TowerType.BASIC);
+      engine.placeTower(0, 0, TowerType.LADYBUG);
       const moneyBefore = engine.state.money;
       engine.moveTower(0, 0, 1, 0);
       expect(engine.state.money).toBe(moneyBefore);
@@ -294,21 +294,21 @@ describe('GameEngine', () => {
 
     it('fails to move to path cell', () => {
       const engine = createEngine();
-      engine.placeTower(0, 0, TowerType.BASIC);
+      engine.placeTower(0, 0, TowerType.LADYBUG);
       expect(engine.moveTower(0, 0, 3, 2)).toBe(false);
       expect(engine.getTowerAt(0, 0)).not.toBeNull();
     });
 
     it('fails to move to occupied cell', () => {
       const engine = createEngine();
-      engine.placeTower(0, 0, TowerType.BASIC);
-      engine.placeTower(1, 0, TowerType.BASIC);
+      engine.placeTower(0, 0, TowerType.LADYBUG);
+      engine.placeTower(1, 0, TowerType.LADYBUG);
       expect(engine.moveTower(0, 0, 1, 0)).toBe(false);
     });
 
     it('fails to move to same cell', () => {
       const engine = createEngine();
-      engine.placeTower(0, 0, TowerType.BASIC);
+      engine.placeTower(0, 0, TowerType.LADYBUG);
       expect(engine.moveTower(0, 0, 0, 0)).toBe(false);
     });
 
@@ -319,7 +319,7 @@ describe('GameEngine', () => {
 
     it('preserves tower type and stats', () => {
       const engine = createEngine();
-      engine.placeTower(0, 0, TowerType.SNIPER);
+      engine.placeTower(0, 0, TowerType.MANTIS);
       const original = engine.getTowerAt(0, 0)!;
       const origType = original.type;
       const origDamage = original.damage;

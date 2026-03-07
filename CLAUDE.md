@@ -12,7 +12,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-Browser-based tower defense game using **Phaser 3** + **TypeScript**, bundled with **Vite**.
+Browser-based garden defense game using **Phaser 3** + **TypeScript**, bundled with **Vite**.
+
+### Theme
+
+Towers are **trees that house beneficial predators** (ladybugs, mantises). Each tower type sends out a specific natural predator as its projectile. Enemies are common **garden pests** (aphids, ants, beetles). Future tower types can include birds, frogs, and other beneficial garden creatures.
 
 ### Logic/Rendering Separation
 

@@ -15,8 +15,8 @@ export enum CellType {
 }
 
 export enum TowerType {
-  BASIC = 'basic',
-  SNIPER = 'sniper',
+  LADYBUG = 'ladybug',
+  MANTIS = 'mantis',
 }
 
 export interface TowerConfig {

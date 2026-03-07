@@ -22,7 +22,7 @@ Exhaustive research into the tower defense genre: history, mechanics, design pri
 14. [Monetization Models](#14-monetization-models)
 15. [Notable Games & What They Did Right](#15-notable-games--what-they-did-right)
 16. [Design Principles & Best Practices](#16-design-principles--best-practices)
-17. [Cyberpunk / Sci-Fi TD Games](#17-cyberpunk--sci-fi-td-games)
+17. [Garden / Nature TD Games](#17-garden--nature-td-games)
 
 ---
 
@@ -642,24 +642,25 @@ The genre's primary weakness is its **repetition system** — players replay the
 
 ---
 
-## 17. Cyberpunk / Sci-Fi TD Games
+## 17. Garden / Nature TD Games
 
-The cyberpunk tower defense subgenre is relatively underexplored, representing an opportunity:
+Garden and nature-themed tower defense is a proven subgenre with massive commercial success:
 
-- **Neon Colony** — Isometric TD with cyberpunk dystopian setting, building roads and harvesting resources on an alien planet. ([Steam](https://store.steampowered.com/app/3192000/Neon_Colony))
-- **Sanctum / Sanctum 2** — Sci-fi FPS-TD hybrid defending against alien hordes. ([Steam](https://store.steampowered.com/app/91600/Sanctum/))
-- **Mindustry** — Sci-fi factory/TD hybrid on alien planets.
+- **Plants vs. Zombies (2009)** — The iconic garden defense game. Plants defend a home garden against zombie waves using lane-based mechanics, sun economy, and cooldown-gated placement. Became a global phenomenon and spawned a major franchise. ([Wikipedia](https://en.wikipedia.org/wiki/Plants_vs._Zombies_(video_game)))
+- **Garden Defense (iWin, 2009)** — Casual TD where plants defend a garden from insect invaders.
+- **Bloom Defenders** — Nature-themed TD with flower and plant towers defending against corruption.
 
-### Cyberpunk Theme Opportunities
+### Garden Defense Mechanical Opportunities
 
-The cyberpunk aesthetic offers unique mechanical possibilities:
-- **Hacking/EMP towers** as crowd control (thematic slow/stun)
-- **Drone towers** as deployable/mobile units
-- **Neon visual effects** for projectiles, ranges, and UI
-- **Corporate vs. rebel narrative** framing
-- **Cyberspace/meatspace dual-layer** maps
-- **AI-driven enemies** that adapt to player strategy (thematically justified DDA)
-- **Upgrade trees as "augmentation"** — cybernetic enhancement metaphor
+The garden theme offers rich mechanical possibilities grounded in real ecology:
+- **Beneficial insects as projectiles** — Ladybugs, mantises, parasitic wasps, lacewings as natural predators
+- **Trees as towers** — Different tree species housing different predators
+- **Companion planting synergies** — Adjacent tower bonuses based on real gardening principles
+- **Seasonal mechanics** — Spring growth bonuses, winter dormancy, autumn harvest rewards
+- **Organic upgrades** — Compost, mulch, fertilizer as upgrade metaphors
+- **Pollinator support towers** — Bee/butterfly attractors that boost nearby tower effectiveness
+- **Bird and frog towers** — Higher-tier predators for late-game waves
+- **Water/irrigation mechanics** — Resource management tied to tower placement
 
 ---
 
@@ -693,6 +694,6 @@ The cyberpunk aesthetic offers unique mechanical possibilities:
 - [UI Analysis of TD Games — joshbauer94](https://joshbauer94.wordpress.com/2014/11/08/user-interface-analysis-of-tower-defence-games/)
 
 ### Asset & Tileset Sources
-- [Cyberpunk Tilesets — itch.io](https://itch.io/game-assets/tag-cyberpunk/tag-tileset/tag-top-down)
+- [Garden/Nature Tilesets — itch.io](https://itch.io/game-assets/tag-nature/tag-tileset/tag-top-down)
 - [TD Assets — CraftPix](https://craftpix.net/sets/tower-defense-top-down-pixel-art/)
 - [TD Sound Effects — Epic Stock Media](https://epicstockmedia.com/product/tower-defense-game-strategy-sound-sets/)

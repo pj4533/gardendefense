@@ -10,7 +10,7 @@ import {
 
 export class GameScene extends Phaser.Scene {
   private engine!: GameEngine;
-  private selectedTowerType: TowerType = TowerType.BASIC;
+  private selectedTowerType: TowerType = TowerType.LADYBUG;
 
   private gridGraphics!: Phaser.GameObjects.Graphics;
   private entityGraphics!: Phaser.GameObjects.Graphics;
@@ -20,8 +20,8 @@ export class GameScene extends Phaser.Scene {
   private waveText!: Phaser.GameObjects.Text;
   private messageText!: Phaser.GameObjects.Text;
 
-  private basicTowerBtn!: Phaser.GameObjects.Text;
-  private sniperTowerBtn!: Phaser.GameObjects.Text;
+  private ladybugBtn!: Phaser.GameObjects.Text;
+  private mantisBtn!: Phaser.GameObjects.Text;
   private sellBtn!: Phaser.GameObjects.Text;
 
   private selectedTower: Tower | null = null;
@@ -67,23 +67,23 @@ export class GameScene extends Phaser.Scene {
         let fillColor: number;
         switch (cell) {
           case CellType.PATH:
-            fillColor = 0x444444;
+            fillColor = 0x8B7355;
             break;
           case CellType.TOWER: {
             const isSelected = this.selectedTower?.col === col && this.selectedTower?.row === row;
-            fillColor = isSelected ? 0x555599 : 0x333355;
+            fillColor = isSelected ? 0x3d7a37 : 0x2d5a27;
             break;
           }
           case CellType.EMPTY:
           default:
-            fillColor = 0x222222;
+            fillColor = 0x3d2b1f;
             break;
         }
 
         this.gridGraphics.fillStyle(fillColor);
         this.gridGraphics.fillRect(x, y, TILE_SIZE, TILE_SIZE);
 
-        this.gridGraphics.lineStyle(1, 0x333333);
+        this.gridGraphics.lineStyle(1, 0x4a3728);
         this.gridGraphics.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
       }
     }
@@ -114,14 +114,14 @@ export class GameScene extends Phaser.Scene {
 
     const btnY = uiY + 30;
 
-    this.basicTowerBtn = this.add.text(10, btnY,
-      ` Basic ($${TOWER_CONFIGS[TowerType.BASIC].cost}) `,
-      { fontSize: '13px', color: '#ffffff', fontFamily: 'monospace', backgroundColor: '#4488ff' },
+    this.ladybugBtn = this.add.text(10, btnY,
+      ` Ladybug ($${TOWER_CONFIGS[TowerType.LADYBUG].cost}) `,
+      { fontSize: '13px', color: '#ffffff', fontFamily: 'monospace', backgroundColor: '#cc4444' },
     ).setInteractive({ useHandCursor: true });
 
-    this.sniperTowerBtn = this.add.text(150, btnY,
-      ` Sniper ($${TOWER_CONFIGS[TowerType.SNIPER].cost}) `,
-      { fontSize: '13px', color: '#ffffff', fontFamily: 'monospace', backgroundColor: '#333333' },
+    this.mantisBtn = this.add.text(150, btnY,
+      ` Mantis ($${TOWER_CONFIGS[TowerType.MANTIS].cost}) `,
+      { fontSize: '13px', color: '#ffffff', fontFamily: 'monospace', backgroundColor: '#4a3728' },
     ).setInteractive({ useHandCursor: true });
 
     const startWaveBtn = this.add.text(310, btnY, ' Start Wave ', {
@@ -139,16 +139,16 @@ export class GameScene extends Phaser.Scene {
       { fontSize: '32px', color: '#ffffff', fontFamily: 'monospace' },
     ).setOrigin(0.5);
 
-    this.basicTowerBtn.on('pointerdown', () => {
-      this.selectedTowerType = TowerType.BASIC;
+    this.ladybugBtn.on('pointerdown', () => {
+      this.selectedTowerType = TowerType.LADYBUG;
       this.selectedTower = null;
       this.updateButtonHighlights();
       this.updateSellButton();
       this.drawGrid();
     });
 
-    this.sniperTowerBtn.on('pointerdown', () => {
-      this.selectedTowerType = TowerType.SNIPER;
+    this.mantisBtn.on('pointerdown', () => {
+      this.selectedTowerType = TowerType.MANTIS;
       this.selectedTower = null;
       this.updateButtonHighlights();
       this.updateSellButton();
@@ -172,11 +172,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateButtonHighlights(): void {
-    this.basicTowerBtn.setBackgroundColor(
-      this.selectedTowerType === TowerType.BASIC ? '#4488ff' : '#333333'
+    this.ladybugBtn.setBackgroundColor(
+      this.selectedTowerType === TowerType.LADYBUG ? '#cc4444' : '#4a3728'
     );
-    this.sniperTowerBtn.setBackgroundColor(
-      this.selectedTowerType === TowerType.SNIPER ? '#ff4444' : '#333333'
+    this.mantisBtn.setBackgroundColor(
+      this.selectedTowerType === TowerType.MANTIS ? '#44aa44' : '#4a3728'
     );
   }
 
@@ -364,11 +364,11 @@ export class GameScene extends Phaser.Scene {
     );
 
     if (this.engine.state.gameOver) {
-      this.messageText.setText('GAME OVER');
-      this.messageText.setColor('#ff0000');
+      this.messageText.setText('GARDEN DESTROYED!');
+      this.messageText.setColor('#8B4513');
     } else if (this.engine.state.victory) {
-      this.messageText.setText('VICTORY!');
-      this.messageText.setColor('#00ff00');
+      this.messageText.setText('GARDEN SAVED!');
+      this.messageText.setColor('#228B22');
     }
   }
 }

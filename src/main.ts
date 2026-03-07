@@ -6,6 +6,6 @@ new Phaser.Game({
   type: Phaser.AUTO,
   width: CANVAS_WIDTH,
   height: CANVAS_HEIGHT,
-  backgroundColor: '#111111',
+  backgroundColor: '#2d1b0e',
   scene: [GameScene],
 });
