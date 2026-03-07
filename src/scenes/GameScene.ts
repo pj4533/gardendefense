@@ -16,10 +16,10 @@ const TOWER_SPRITE: Record<string, { key: string; idle: string }> = {
 };
 
 // Map enemy colors to spritesheet keys and animation config
-const ENEMY_SPRITE: Record<number, { key: string; move: string }> = {
-  0x88cc44: { key: 'larva', move: 'larva_move' },       // aphid
-  0x664422: { key: 'scarab', move: 'scarab_move' },      // ant
-  0x336633: { key: 'rhino_beetle', move: 'rhino_move' }, // beetle
+const ENEMY_SPRITE: Record<number, { key: string; move: string; originY: number }> = {
+  0x88cc44: { key: 'larva', move: 'larva_move', originY: 0.5 },         // aphid — centered in frame
+  0x664422: { key: 'scarab', move: 'scarab_move', originY: 0.9 },       // ant — artwork sits low in frame
+  0x336633: { key: 'rhino_beetle', move: 'rhino_move', originY: 0.9 },  // beetle — artwork sits low in frame
 };
 
 export class GameScene extends Phaser.Scene {
@@ -377,6 +377,7 @@ export class GameScene extends Phaser.Scene {
         const cfg = ENEMY_SPRITE[enemy.color] || ENEMY_SPRITE[0x88cc44];
         sprite = this.add.sprite(enemy.x, enemy.y, cfg.key);
         sprite.setDisplaySize(TILE_SIZE * 0.8, TILE_SIZE * 0.8);
+        sprite.setOrigin(0.5, cfg.originY);
         sprite.setDepth(3);
         sprite.play(cfg.move);
         this.enemySprites.set(enemy, sprite);
