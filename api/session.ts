@@ -1,5 +1,6 @@
 import { Redis } from '@upstash/redis';
-import crypto from 'crypto';
+
+export const config = { runtime: 'edge' };
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL!,
@@ -7,12 +8,17 @@ const redis = new Redis({
 });
 
 function isValidSeed(seed: number): boolean {
-  // Accept today or yesterday (timezone edge cases)
   const now = new Date();
   const today = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
   const yesterday = new Date(now.getTime() - 86400000);
   const yesterdaySeed = yesterday.getFullYear() * 10000 + (yesterday.getMonth() + 1) * 100 + yesterday.getDate();
   return seed === today || seed === yesterdaySeed;
+}
+
+function randomHex(bytes: number): string {
+  const arr = new Uint8Array(bytes);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -39,7 +45,7 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   const sessionId = crypto.randomUUID();
-  const secret = crypto.randomBytes(32).toString('hex');
+  const secret = randomHex(32);
 
   await redis.set(`session:${sessionId}`, JSON.stringify({
     secret,

@@ -1,5 +1,7 @@
 import { Redis } from '@upstash/redis';
 
+export const config = { runtime: 'edge' };
+
 const redis = new Redis({
   url: process.env.KV_REST_API_URL!,
   token: process.env.KV_REST_API_TOKEN!,
@@ -28,18 +30,12 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   const leaderboardKey = `leaderboard:${seed}`;
-
-  // Get top 10, highest scores first (ZREVRANGE returns [member, score, member, score, ...])
   const results = await redis.zrange(leaderboardKey, 0, 9, { rev: true, withScores: true });
 
-  // results is an array of { member, score } or alternating values depending on SDK version
-  // @upstash/redis zrange with withScores returns: [value, score, value, score, ...]
   const entries: { initials: string; score: number }[] = [];
-
   for (let i = 0; i < results.length; i += 2) {
     const member = String(results[i]);
     const score = Number(results[i + 1]);
-    // Member format: "ABC:sessionId" — extract initials
     const initials = member.split(':')[0];
     entries.push({ initials, score });
   }
