@@ -18,7 +18,7 @@ Daily Defense gives every player the same randomly-generated map each day. Place
 
 - Full skill document: /skill.md
 - OpenAPI spec: /openapi.json
-- Play in browser: https://dailydefense.vercel.app
+- Play in browser: https://dailydefense.ai
 `;
 
 export default async function handler(req: Request): Promise<Response> {

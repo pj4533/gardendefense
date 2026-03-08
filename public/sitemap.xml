@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://dailydefense.vercel.app/</loc>
+    <loc>https://dailydefense.ai/</loc>
   </url>
   <url>
-    <loc>https://dailydefense.vercel.app/skill.md</loc>
+    <loc>https://dailydefense.ai/skill.md</loc>
   </url>
   <url>
-    <loc>https://dailydefense.vercel.app/llms.txt</loc>
+    <loc>https://dailydefense.ai/llms.txt</loc>
   </url>
   <url>
-    <loc>https://dailydefense.vercel.app/openapi.json</loc>
+    <loc>https://dailydefense.ai/openapi.json</loc>
   </url>
 </urlset>

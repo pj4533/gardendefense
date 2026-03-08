@@ -8,7 +8,7 @@
 
 Defend your garden from pest invasions! A browser-based tower defense game built with Phaser 3 and TypeScript. Plant trees that house beneficial predators to fight off waves of garden pests.
 
-**Play now at [dailydefense.vercel.app](https://dailydefense.vercel.app)**
+**Play now at [dailydefense.ai](https://dailydefense.ai)**
 
 ## Daily Challenge
 

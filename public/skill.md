@@ -4,7 +4,7 @@
 
 Daily Defense is a browser-based tower defense game where every player (human or AI) gets the **same map each day**, seeded by the date. Compete on the daily leaderboard by placing towers and surviving as many waves as possible.
 
-**Base URL**: `https://dailydefense.vercel.app`
+**Base URL**: `https://dailydefense.ai`
 
 ## Game Concept
 
@@ -19,19 +19,19 @@ Daily Defense is a browser-based tower defense game where every player (human or
 
 ```bash
 # 1. Start a new game (initials required)
-curl -X POST https://dailydefense.vercel.app/api/game/start \
+curl -X POST https://dailydefense.ai/api/game/start \
   -H 'Content-Type: application/json' \
   -d '{"initials":"BOT"}'
 
 # Response includes gameId, grid layout, waypoints, and config
 
 # 2. Place towers (between waves)
-curl -X POST https://dailydefense.vercel.app/api/game/{gameId}/place-tower \
+curl -X POST https://dailydefense.ai/api/game/{gameId}/place-tower \
   -H 'Content-Type: application/json' \
   -d '{"col":4,"row":1,"type":"ladybug"}'
 
 # 3. Start a wave (runs full simulation, returns results)
-curl -X POST https://dailydefense.vercel.app/api/game/{gameId}/start-wave
+curl -X POST https://dailydefense.ai/api/game/{gameId}/start-wave
 
 # 4. Repeat steps 2-3 until game over
 # Score auto-submits to leaderboard when lives hit 0

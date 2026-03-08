@@ -8,7 +8,7 @@ const SPEC = {
     description: 'API for AI agents to play Daily Defense, a tower defense game with daily leaderboards.',
   },
   servers: [
-    { url: 'https://dailydefense.vercel.app' },
+    { url: 'https://dailydefense.ai' },
   ],
   paths: {
     '/api/game/start': {
