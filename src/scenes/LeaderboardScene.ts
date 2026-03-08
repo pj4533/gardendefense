@@ -49,14 +49,20 @@ export class LeaderboardScene extends Phaser.Scene {
     frame.fillRect(CANVAS_WIDTH - 36, 558, 14, 1);
     frame.fillRect(CANVAS_WIDTH - 23, 549, 1, 10);
 
+    // Site title
+    this.add.text(cx, 32, 'DAILY DEFENSE', {
+      fontSize: '14px', color: '#00ffff', fontFamily: ARCADE_FONT,
+      stroke: '#003333', strokeThickness: 3,
+    }).setOrigin(0.5);
+
     // Title
-    this.add.text(cx, 38, 'HIGH SCORES', {
+    this.add.text(cx, 56, 'HIGH SCORES', {
       fontSize: '20px', color: '#ffff00', fontFamily: ARCADE_FONT,
       stroke: '#664400', strokeThickness: 4,
     }).setOrigin(0.5);
 
     // Seed label
-    this.add.text(cx, 62, this.seedLabel, {
+    this.add.text(cx, 78, this.seedLabel, {
       fontSize: '10px', color: '#00ffff', fontFamily: ARCADE_FONT,
     }).setOrigin(0.5);
 
@@ -79,7 +85,7 @@ export class LeaderboardScene extends Phaser.Scene {
   }
 
   private renderEntries(entries: LeaderboardEntry[], cx: number): void {
-    const startY = 100;
+    const startY = 110;
     const rowHeight = 30;
 
     // Header

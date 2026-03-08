@@ -48,20 +48,26 @@ export class GameOverScene extends Phaser.Scene {
     frame.fillStyle(0x220022);
     this.solidBorder(frame, 24, 19, CANVAS_WIDTH - 48, 537, 1);
 
+    // Site title
+    this.add.text(cx, 35, 'DAILY DEFENSE', {
+      fontSize: '14px', color: '#00ffff', fontFamily: ARCADE_FONT,
+      stroke: '#003333', strokeThickness: 3,
+    }).setOrigin(0.5);
+
     // Title
-    this.add.text(cx, 60, 'GAME OVER', {
+    this.add.text(cx, 70, 'GAME OVER', {
       fontSize: '32px', color: '#ff4444', fontFamily: ARCADE_FONT,
       stroke: '#440000', strokeThickness: 6,
     }).setOrigin(0.5);
 
     // Score
-    this.add.text(cx, 120, `SCORE: ${this.score}`, {
+    this.add.text(cx, 130, `SCORE: ${this.score}`, {
       fontSize: '18px', color: '#00ffff', fontFamily: ARCADE_FONT,
       stroke: '#003333', strokeThickness: 4,
     }).setOrigin(0.5);
 
     // Prompt
-    this.add.text(cx, 175, 'ENTER YOUR INITIALS', {
+    this.add.text(cx, 185, 'ENTER YOUR INITIALS', {
       fontSize: '10px', color: '#00ff66', fontFamily: ARCADE_FONT,
     }).setOrigin(0.5);
 
@@ -72,7 +78,7 @@ export class GameOverScene extends Phaser.Scene {
     const slotW = 50, slotH = 56, slotGap = 14;
     const totalSlotW = 3 * slotW + 2 * slotGap;
     const slotStartX = cx - totalSlotW / 2;
-    const slotY = 205;
+    const slotY = 215;
 
     for (let i = 0; i < 3; i++) {
       const sx = slotStartX + i * (slotW + slotGap);
@@ -96,14 +102,14 @@ export class GameOverScene extends Phaser.Scene {
     }
 
     // Instructions
-    this.add.text(cx, 288, 'TAP LETTERS OR USE KEYBOARD', {
+    this.add.text(cx, 298, 'TAP LETTERS OR USE KEYBOARD', {
       fontSize: '7px', color: '#444444', fontFamily: ARCADE_FONT,
     }).setOrigin(0.5);
 
     // Virtual keyboard
     const rows = ['ABCDEFGHI', 'JKLMNOPQR', 'STUVWXYZ'];
     const keyW = 40, keyH = 40, keyGap = 4;
-    const kbStartY = 310;
+    const kbStartY = 320;
 
     for (let r = 0; r < rows.length; r++) {
       const row = rows[r];
@@ -244,7 +250,7 @@ export class GameOverScene extends Phaser.Scene {
       const slotW = 50, slotGap = 14;
       const totalSlotW = 3 * slotW + 2 * slotGap;
       const slotStartX = CANVAS_WIDTH / 2 - totalSlotW / 2;
-      const slotY = 205, slotH = 56;
+      const slotY = 215, slotH = 56;
       const idx = this.initials.length;
       const cx = slotStartX + idx * (slotW + slotGap);
 

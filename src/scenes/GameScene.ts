@@ -129,6 +129,20 @@ export class GameScene extends Phaser.Scene {
     this.overlayGraphics = this.add.graphics();
     this.overlayGraphics.setDepth(10);
 
+    // Title banner at top of game area
+    const cw = GRID_COLS * TILE_SIZE;
+    const titleBg = this.add.graphics();
+    titleBg.setDepth(11);
+    titleBg.fillStyle(0x06060f, 0.75);
+    titleBg.fillRect(0, 0, cw, 28);
+    titleBg.fillStyle(0x00ffff, 0.4);
+    titleBg.fillRect(0, 27, cw, 1);
+
+    this.add.text(cw / 2, 14, 'DAILY DEFENSE', {
+      fontSize: '16px', color: '#00ffff', fontFamily: ARCADE_FONT,
+      stroke: '#003333', strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(12);
+
     this.createUI();
 
     this.input.on('pointerdown', this.handlePointerDown, this);
