@@ -1,5 +1,5 @@
 import { WaveConfig, EnemyConfig } from '../types';
-import { ENEMY_CONFIGS } from '../config';
+import { ENEMY_CONFIGS, WAVE_CLEAR_BONUS } from '../config';
 
 export function generateWave(waveNumber: number): WaveConfig {
   const enemies: WaveConfig['enemies'] = [];
@@ -33,6 +33,19 @@ export function generateWave(waveNumber: number): WaveConfig {
   }
 
   return { enemies };
+}
+
+/** Compute the maximum possible score for a given wave (all enemies killed + wave clear bonus). */
+export function maxScoreForWave(waveNumber: number): number {
+  const wave = generateWave(waveNumber);
+  let killRewards = 0;
+  for (const group of wave.enemies) {
+    killRewards += group.count * group.config.reward;
+  }
+  // Wave clear bonus uses (waveNumber + 1) because WaveManager increments currentWave
+  // before the clear check runs in GameEngine
+  const waveClearBonus = (waveNumber + 1) * WAVE_CLEAR_BONUS;
+  return killRewards + waveClearBonus;
 }
 
 function scaleEnemy(base: EnemyConfig, waveNumber: number): EnemyConfig {

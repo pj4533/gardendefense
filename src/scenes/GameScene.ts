@@ -119,6 +119,12 @@ export class GameScene extends Phaser.Scene {
       this.sessionData = data;
     });
 
+    this.engine.onWaveComplete = () => {
+      if (this.sessionData) {
+        leaderboard.reportWaveComplete(this.sessionData.sessionId);
+      }
+    };
+
     this.createAnimations();
     this.createGrid();
 

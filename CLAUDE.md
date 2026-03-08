@@ -42,18 +42,31 @@ Every day gets a unique map and leaderboard:
 - **`src/logic/dailySeed.ts`** — `getDailySeed()` returns `YYYYMMDD` as an integer (e.g. `20260307`). `getDailySeedLabel()` returns a display string like `"MAR 07"`.
 - **`src/logic/seedRng.ts`** — `mulberry32(seed)` is a deterministic PRNG seeded by the daily seed.
 - **`src/logic/MapGenerator.ts`** — `generateRandomPath()` uses the seeded RNG to produce a random path layout. Same seed = same map for all players that day.
-- **`src/logic/WaveGenerator.ts`** — `generateWave()` produces endless scaling waves.
+- **`src/logic/WaveGenerator.ts`** — `generateWave()` produces endless scaling waves. `maxScoreForWave()` computes the theoretical max score for a given wave (used by anti-cheat).
 
 ### Leaderboard System
 
-Cloud leaderboard powered by **Vercel Blob** (private access store):
+Cloud leaderboard powered by **Upstash Redis** (sorted sets):
 
-- **`api/leaderboard.ts`** — Serverless function handling GET (fetch scores) and POST (submit score). Stores data as `leaderboard_{seed}.json` in Vercel Blob. Each daily seed has its own leaderboard, so scores reset naturally when the day changes.
-- **`src/logic/Leaderboard.ts`** — Client-side class that calls `/api/leaderboard` endpoints.
+- **`api/leaderboard.ts`** — Serverless function handling GET to fetch top 10 scores. Stores data as `leaderboard:{seed}` sorted sets in Redis. Each daily seed has its own leaderboard (TTL: 7 days).
+- **`api/session.ts`** — Creates a signed session for browser clients at game start. Stores session in Redis with HMAC secret and wave-tracking fields.
+- **`api/session/wave-complete.ts`** — Anti-cheat endpoint. Browser clients must report each wave completion; server tracks `wavesCompleted` and `maxPossibleScore`.
+- **`api/submit-score.ts`** — Score submission for browser clients. Validates HMAC signature, requires at least 1 wave completed, and caps the score to the server-tracked maximum.
+- **`src/logic/Leaderboard.ts`** — Client-side class that calls session, wave-complete, leaderboard, and submit-score endpoints.
 - **`src/scenes/GameOverScene.ts`** — Initials entry screen (3-letter arcade style). Submits score then transitions to leaderboard.
 - **`src/scenes/LeaderboardScene.ts`** — Displays top 10 scores for the current daily seed. Accessible mid-game via the "Scores" HUD button.
 
-**Important**: The Blob store uses **private access**. Reads must use `get()` from `@vercel/blob` (not plain `fetch`), and writes use `access: 'private'`.
+### Anti-Cheat (Browser Client Flow)
+
+The browser leaderboard submission uses server-side wave tracking to prevent score fabrication:
+
+1. **Session start** (`POST /api/session`) — Server creates a session with `wavesCompleted: 0`, `maxPossibleScore: 0`, and an HMAC secret.
+2. **Wave reporting** (`POST /api/session/wave-complete`) — After each wave clears, the client reports it. Server enforces 5-second minimum between waves and accumulates `maxPossibleScore` using `maxScoreForWave()`.
+3. **Score submission** (`POST /api/submit-score`) — Server rejects if `wavesCompleted < 1`. Score is capped to `maxPossibleScore + maxScoreForWave(wavesCompleted)` (the extra wave covers partial kills during the death wave).
+
+`GameEngine.onWaveComplete` callback fires when a wave is cleared; `GameScene` wires this to call `Leaderboard.reportWaveComplete()`.
+
+The agent API flow (`/api/game/*`) is unaffected — it uses full server-side simulation and auto-submits scores.
 
 ### Game Engine Flow
 
@@ -65,7 +78,7 @@ Cloud leaderboard powered by **Vercel Blob** (private access store):
 5. Move projectiles (may kill enemies via takeDamage)
 6. Collect rewards for killed enemies (not end-reached ones)
 7. Cleanup dead entities
-8. Check victory condition
+8. Check wave-clear condition (awards bonus, fires `onWaveComplete` callback)
 
 ### Key Classes
 

@@ -15,6 +15,7 @@ export class GameEngine {
   towers: Tower[] = [];
   projectiles: Projectile[] = [];
   private waveInProgress: boolean = false;
+  onWaveComplete?: () => void;
 
   constructor(
     cols: number,
@@ -92,6 +93,7 @@ export class GameEngine {
       const bonus = this.waveManager.currentWave * WAVE_CLEAR_BONUS;
       this.state.addScore(bonus);
       this.waveInProgress = false;
+      this.onWaveComplete?.();
     }
   }
 

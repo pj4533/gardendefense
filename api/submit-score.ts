@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis';
+import { maxScoreForWave } from '../src/logic/WaveGenerator';
 
 export const config = { runtime: 'edge' };
 
@@ -75,11 +76,23 @@ export default async function handler(req: Request): Promise<Response> {
     return Response.json({ error: 'Invalid signature' }, { status: 403 });
   }
 
+  // Anti-cheat: require at least 1 wave completed via server tracking
+  const wavesCompleted = session.wavesCompleted ?? 0;
+  if (wavesCompleted < 1) {
+    return Response.json({ error: 'No waves completed' }, { status: 403 });
+  }
+
+  // Cap score to server-tracked max + one extra wave for partial kills during death wave
+  const trackedMax = session.maxPossibleScore ?? 0;
+  const extraWaveMax = maxScoreForWave(wavesCompleted);
+  const scoreCap = trackedMax + extraWaveMax;
+  const effectiveScore = Math.min(score, scoreCap);
+
   await redis.del(`session:${sessionId}`);
 
   const leaderboardKey = `leaderboard:${seed}`;
   const member = `${cleaned}:h:${sessionId}`;
-  await redis.zadd(leaderboardKey, { score, member });
+  await redis.zadd(leaderboardKey, { score: effectiveScore, member });
   await redis.zremrangebyrank(leaderboardKey, 0, -11);
   await redis.expire(leaderboardKey, 604800);
 

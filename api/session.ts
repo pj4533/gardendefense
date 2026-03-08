@@ -59,10 +59,14 @@ export default async function handler(req: Request): Promise<Response> {
   const sessionId = crypto.randomUUID();
   const secret = randomHex(32);
 
+  const now = Date.now();
   await redis.set(`session:${sessionId}`, JSON.stringify({
     secret,
     seed,
-    createdAt: Date.now(),
+    createdAt: now,
+    wavesCompleted: 0,
+    maxPossibleScore: 0,
+    lastWaveAt: now,
   }), { ex: 3600 });
 
   return Response.json({ sessionId, secret }, {

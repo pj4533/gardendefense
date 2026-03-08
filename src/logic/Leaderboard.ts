@@ -91,6 +91,19 @@ export class Leaderboard {
     }
   }
 
+  async reportWaveComplete(sessionId: string): Promise<boolean> {
+    try {
+      const res = await fetch('/api/session/wave-complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
   async isHighScore(seed: number, score: number): Promise<boolean> {
     const entries = await this.getEntries(seed);
     if (entries.length < LEADERBOARD_MAX_ENTRIES) return true;
