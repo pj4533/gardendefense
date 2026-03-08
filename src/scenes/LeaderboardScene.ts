@@ -120,7 +120,7 @@ export class LeaderboardScene extends Phaser.Scene {
       const scoreColor = i < 3 ? rankColors[i] : '#ffffff';
 
       const rankText = this.add.text(cx - 170, y, `${i + 1}.`, { fontSize: '12px', color: rankColor, fontFamily: ARCADE_FONT });
-      const displayName = entry.isAgent ? `${entry.initials} [BOT]` : entry.initials;
+      const displayName = entry.isAgent ? `${entry.initials} 🤖` : entry.initials;
       const nameColor2 = entry.isAgent ? '#88ff88' : nameColor;
       const nameText = this.add.text(cx - 40, y, displayName, { fontSize: '12px', color: nameColor2, fontFamily: ARCADE_FONT });
       const entryScoreText = this.add.text(cx + 100, y, `${entry.score}`, { fontSize: '12px', color: scoreColor, fontFamily: ARCADE_FONT });
