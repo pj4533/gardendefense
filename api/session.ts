@@ -7,12 +7,24 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN!,
 });
 
+function easternSeed(date: Date): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const year = Number(parts.find(p => p.type === 'year')!.value);
+  const month = Number(parts.find(p => p.type === 'month')!.value);
+  const day = Number(parts.find(p => p.type === 'day')!.value);
+  return year * 10000 + month * 100 + day;
+}
+
 function isValidSeed(seed: number): boolean {
   const now = new Date();
-  const today = now.getUTCFullYear() * 10000 + (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
-  const yesterday = new Date(now.getTime() - 86400000);
-  const yesterdaySeed = yesterday.getUTCFullYear() * 10000 + (yesterday.getUTCMonth() + 1) * 100 + yesterday.getUTCDate();
-  return seed === today || seed === yesterdaySeed;
+  const today = easternSeed(now);
+  const yesterday = easternSeed(new Date(now.getTime() - 86400000));
+  return seed === today || seed === yesterday;
 }
 
 function randomHex(bytes: number): string {

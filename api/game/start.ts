@@ -15,7 +15,16 @@ const redis = new Redis({
 
 function getDailySeed(): number {
   const now = new Date();
-  return now.getUTCFullYear() * 10000 + (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+  const year = Number(parts.find(p => p.type === 'year')!.value);
+  const month = Number(parts.find(p => p.type === 'month')!.value);
+  const day = Number(parts.find(p => p.type === 'day')!.value);
+  return year * 10000 + month * 100 + day;
 }
 
 export default async function handler(req: Request): Promise<Response> {
