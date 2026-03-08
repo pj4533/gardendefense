@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Deployment
 
-Hosted on **Vercel** at [gardendefense.vercel.app](https://gardendefense.vercel.app). GitHub repo is connected — **pushing to `main` auto-deploys to production**. No need to run `vercel --prod` manually.
+Hosted on **Vercel** at [dailydefense.vercel.app](https://dailydefense.vercel.app). GitHub repo is connected — **pushing to `main` auto-deploys to production**. No need to run `vercel --prod` manually.
 
 - **Vercel CLI** is linked to the project (`.vercel/` directory, gitignored)
 - **Environment variables**: `BLOB_READ_WRITE_TOKEN` is set in Vercel for all environments

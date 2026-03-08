@@ -1,4 +1,4 @@
-# Garden Defense
+# Daily Defense
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?logo=typescript)
 ![Phaser](https://img.shields.io/badge/Phaser-3.80-blueviolet?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTEyIDJMMiAyMmgyMEwxMiAyeiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=)
@@ -8,7 +8,7 @@
 
 Defend your garden from pest invasions! A browser-based tower defense game built with Phaser 3 and TypeScript. Plant trees that house beneficial predators to fight off waves of garden pests.
 
-**Play now at [gardendefense.vercel.app](https://gardendefense.vercel.app)**
+**Play now at [dailydefense.vercel.app](https://dailydefense.vercel.app)**
 
 ## Daily Challenge
 

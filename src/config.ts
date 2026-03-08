@@ -13,7 +13,7 @@ export const STARTING_MONEY = 100;
 export const STARTING_LIVES = 5;
 export const SELL_REFUND_RATE = 1.0; // 100% refund
 
-export const LEADERBOARD_KEY = 'gardendefense_leaderboard';
+export const LEADERBOARD_KEY = 'dailydefense_leaderboard';
 export const LEADERBOARD_MAX_ENTRIES = 10;
 export const WAVE_CLEAR_BONUS = 100;
 
