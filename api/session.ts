@@ -1,4 +1,8 @@
 import { Redis } from '@upstash/redis';
+import { GRID_COLS, GRID_ROWS, STARTING_MONEY, STARTING_LIVES } from '../src/config';
+import { mulberry32 } from '../src/logic/seedRng';
+import { generateRandomPath } from '../src/logic/MapGenerator';
+import { BrowserSessionState } from '../src/logic/BrowserSessionState';
 
 export const config = { runtime: 'edge' };
 
@@ -27,12 +31,6 @@ function isValidSeed(seed: number): boolean {
   return seed === today || seed === yesterday;
 }
 
-function randomHex(bytes: number): string {
-  const arr = new Uint8Array(bytes);
-  crypto.getRandomValues(arr);
-  return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 export default async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -56,20 +54,28 @@ export default async function handler(req: Request): Promise<Response> {
     return Response.json({ error: 'Invalid seed' }, { status: 400 });
   }
 
+  const rng = mulberry32(seed);
+  const waypoints = generateRandomPath(GRID_COLS, GRID_ROWS, rng);
+
   const sessionId = crypto.randomUUID();
-  const secret = randomHex(32);
 
-  const now = Date.now();
-  await redis.set(`session:${sessionId}`, JSON.stringify({
-    secret,
+  const sessionState: BrowserSessionState = {
     seed,
-    createdAt: now,
-    wavesCompleted: 0,
-    maxPossibleScore: 0,
-    lastWaveAt: now,
-  }), { ex: 3600 });
+    waypoints,
+    money: STARTING_MONEY,
+    lives: STARTING_LIVES,
+    score: 0,
+    gameOver: false,
+    currentWave: 0,
+    towers: [],
+    createdAt: Date.now(),
+    submitted: false,
+    waveInProgress: false,
+  };
 
-  return Response.json({ sessionId, secret }, {
+  await redis.set(`session:${sessionId}`, JSON.stringify(sessionState), { ex: 3600 });
+
+  return Response.json({ sessionId }, {
     headers: { 'Access-Control-Allow-Origin': '*' },
   });
 }

@@ -14,6 +14,7 @@ import { generateWave } from '../logic/WaveGenerator';
 import { mulberry32 } from '../logic/seedRng';
 import { getDailySeed, getDailySeedLabel } from '../logic/dailySeed';
 import { Leaderboard, SessionData } from '../logic/Leaderboard';
+import { ActionRecorder } from '../logic/ActionRecorder';
 
 // Map tower types to spritesheet keys and animation config
 const TOWER_SPRITE: Record<string, { key: string; idle: string }> = {
@@ -73,6 +74,12 @@ export class GameScene extends Phaser.Scene {
   private seed: number = 0;
   private seedLabel: string = '';
   private sessionData: SessionData | null = null;
+  private leaderboard!: Leaderboard;
+  private actionRecorder!: ActionRecorder;
+  private waveActive: boolean = false;
+  private simAccumulator: number = 0;
+  private readonly SIM_DT = 1 / 60;
+  private serverScore: number = 0;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -105,6 +112,9 @@ export class GameScene extends Phaser.Scene {
     this.gameOverTimer = 0;
     this.isHighScore = null;
     this.sessionData = null;
+    this.waveActive = false;
+    this.simAccumulator = 0;
+    this.serverScore = 0;
 
     this.seed = getDailySeed();
     this.seedLabel = getDailySeedLabel();
@@ -116,14 +126,28 @@ export class GameScene extends Phaser.Scene {
       STARTING_MONEY, STARTING_LIVES,
     );
 
-    const leaderboard = new Leaderboard();
-    leaderboard.startSession(this.seed).then(data => {
+    this.leaderboard = new Leaderboard();
+    this.actionRecorder = new ActionRecorder();
+    this.leaderboard.startSession(this.seed).then(data => {
       this.sessionData = data;
     });
 
     this.engine.onWaveComplete = () => {
       if (this.sessionData) {
-        leaderboard.reportWaveComplete(this.sessionData.sessionId);
+        this.leaderboard.completeWave(this.sessionData.sessionId, this.actionRecorder.getActions()).then(result => {
+          if (result) {
+            this.engine.state.money = result.state.money;
+            this.engine.state.lives = result.state.lives;
+            this.engine.state.score = result.state.score;
+            this.serverScore = result.state.score;
+            if (result.state.gameOver) {
+              this.engine.state.gameOver = true;
+            }
+          }
+          this.waveActive = false;
+        });
+      } else {
+        this.waveActive = false;
       }
     };
 
@@ -289,13 +313,33 @@ export class GameScene extends Phaser.Scene {
 
     this.startWaveBtn = this.makeArcadeBtn(x, btnY, btnW, btnHeight,
       'START WAVE', 0x00ff66, fontSize, () => {
-        this.engine.startNextWave();
+        if (this.sessionData) {
+          this.leaderboard.startWave(this.sessionData.sessionId).then(ok => {
+            if (ok) {
+              this.actionRecorder.reset();
+              this.waveActive = true;
+              this.engine.startNextWave();
+            }
+          });
+        } else {
+          this.engine.startNextWave();
+        }
       });
     x += btnW + gap;
 
     this.sellBtn = this.makeArcadeBtn(x, btnY, btnW, btnHeight, '', 0xff4444, fontSize, () => {
       if (this.selectedTower) {
-        this.engine.removeTower(this.selectedTower.col, this.selectedTower.row);
+        const col = this.selectedTower.col;
+        const row = this.selectedTower.row;
+        if (this.waveActive) {
+          this.engine.removeTower(col, row);
+          this.actionRecorder.recordSell(col, row);
+        } else {
+          this.engine.removeTower(col, row);
+          if (this.sessionData) {
+            this.leaderboard.sellTower(this.sessionData.sessionId, col, row);
+          }
+        }
         this.selectedTower = null;
         this.updateSellButton();
       }
@@ -461,7 +505,14 @@ export class GameScene extends Phaser.Scene {
       this.updateSellButton();
       return;
     }
-    this.engine.placeTower(col, row, this.selectedTowerType);
+    const placed = this.engine.placeTower(col, row, this.selectedTowerType);
+    if (placed) {
+      if (this.waveActive) {
+        this.actionRecorder.recordPlace(col, row, this.selectedTowerType);
+      } else if (this.sessionData) {
+        this.leaderboard.placeTower(this.sessionData.sessionId, col, row, this.selectedTowerType);
+      }
+    }
   }
 
   private handlePointerMove(pointer: Phaser.Input.Pointer): void {
@@ -481,7 +532,14 @@ export class GameScene extends Phaser.Scene {
   private handlePointerUp(_pointer: Phaser.Input.Pointer): void {
     if (!this.pointerDown) return;
     if (this.isDragging && this.dragTower) {
-      this.engine.moveTower(this.dragStartCol, this.dragStartRow, this.dragGhostCol, this.dragGhostRow);
+      const moved = this.engine.moveTower(this.dragStartCol, this.dragStartRow, this.dragGhostCol, this.dragGhostRow);
+      if (moved) {
+        if (this.waveActive) {
+          this.actionRecorder.recordMove(this.dragStartCol, this.dragStartRow, this.dragGhostCol, this.dragGhostRow);
+        } else if (this.sessionData) {
+          this.leaderboard.moveTower(this.sessionData.sessionId, this.dragStartCol, this.dragStartRow, this.dragGhostCol, this.dragGhostRow);
+        }
+      }
       this.selectedTower = null;
       this.updateSellButton();
     } else if (this.dragTower) {
@@ -503,17 +561,17 @@ export class GameScene extends Phaser.Scene {
     if (this.gameOverTriggered) {
       this.gameOverTimer -= dt;
       if (this.gameOverTimer <= 0 && this.isHighScore !== null) {
+        const score = this.serverScore || this.engine.state.score;
         if (this.isHighScore) {
           this.scene.start('GameOverScene', {
-            score: this.engine.state.score,
+            score,
             seed: this.seed,
             seedLabel: this.seedLabel,
             sessionId: this.sessionData?.sessionId ?? '',
-            secret: this.sessionData?.secret ?? '',
           });
         } else {
           this.scene.start('LeaderboardScene', {
-            score: this.engine.state.score,
+            score,
             initials: '',
             seed: this.seed,
             seedLabel: this.seedLabel,
@@ -532,7 +590,13 @@ export class GameScene extends Phaser.Scene {
     this.drawBtnGfx(btn.g, btn.x, btn.y, btn.w, btn.h, pulseColor, pulse > 0.6);
     btn.label.setColor(`#00${pGreen.toString(16).padStart(2, '0')}${pBlue.toString(16).padStart(2, '0')}`);
 
-    this.engine.update(dt);
+    // Fixed-timestep accumulator
+    this.simAccumulator += dt;
+    while (this.simAccumulator >= this.SIM_DT) {
+      this.engine.update(this.SIM_DT);
+      if (this.waveActive) this.actionRecorder.tick();
+      this.simAccumulator -= this.SIM_DT;
+    }
 
     if (this.selectedTower && !this.engine.towers.includes(this.selectedTower)) {
       this.selectedTower = null;
@@ -551,12 +615,29 @@ export class GameScene extends Phaser.Scene {
       this.messageText.setText('GARDEN DESTROYED!');
       this.messageText.setColor('#ff4444');
 
-      const leaderboard = new Leaderboard();
-      leaderboard.isHighScore(this.seed, this.engine.state.score).then(result => {
-        this.isHighScore = result;
-      }).catch(() => {
-        this.isHighScore = true; // Default to showing initials entry on error
-      });
+      const checkHighScore = (score: number) => {
+        this.leaderboard.isHighScore(this.seed, score).then(result => {
+          this.isHighScore = result;
+        }).catch(() => {
+          this.isHighScore = true;
+        });
+      };
+
+      // Report the death wave to the server so it sets gameOver = true
+      if (this.sessionData && this.waveActive) {
+        this.leaderboard.completeWave(this.sessionData.sessionId, this.actionRecorder.getActions()).then(result => {
+          if (result) {
+            this.serverScore = result.state.score;
+          }
+          this.waveActive = false;
+          checkHighScore(this.serverScore || this.engine.state.score);
+        }).catch(() => {
+          this.waveActive = false;
+          checkHighScore(this.engine.state.score);
+        });
+      } else {
+        checkHighScore(this.serverScore || this.engine.state.score);
+      }
     }
   }
 

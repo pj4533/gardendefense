@@ -1,5 +1,5 @@
 import { Redis } from '@upstash/redis';
-import { maxScoreForWave } from '../src/logic/WaveGenerator';
+import { BrowserSessionState } from '../src/logic/BrowserSessionState';
 
 export const config = { runtime: 'edge' };
 
@@ -8,20 +8,7 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN!,
 });
 
-const MAX_SCORE = 100000;
 const MIN_DURATION_MS = 30000;
-
-async function computeHmac(secret: string, message: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw', encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
-  );
-  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(message));
-  return Array.from(new Uint8Array(sig))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
@@ -39,11 +26,17 @@ export default async function handler(req: Request): Promise<Response> {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
-  const body = await req.json();
-  const { sessionId, seed, initials, score, signature } = body;
+  let body: { sessionId?: string; initials?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
 
-  if (!sessionId || typeof seed !== 'number' || typeof score !== 'number' || !signature || !initials) {
-    return Response.json({ error: 'Missing required fields' }, { status: 400 });
+  const { sessionId, initials } = body;
+
+  if (!sessionId || !initials) {
+    return Response.json({ error: 'sessionId and initials are required' }, { status: 400 });
   }
 
   const cleaned = String(initials).replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
@@ -51,19 +44,19 @@ export default async function handler(req: Request): Promise<Response> {
     return Response.json({ error: 'Initials must be 3 letters' }, { status: 400 });
   }
 
-  if (!Number.isInteger(score) || score <= 0 || score > MAX_SCORE) {
-    return Response.json({ error: 'Invalid score' }, { status: 400 });
-  }
-
-  const sessionData = await redis.get(`session:${sessionId}`) as string | null;
-  if (!sessionData) {
+  const data = await redis.get(`session:${sessionId}`) as string | null;
+  if (!data) {
     return Response.json({ error: 'Invalid or expired session' }, { status: 403 });
   }
 
-  const session = typeof sessionData === 'string' ? JSON.parse(sessionData) : sessionData;
+  const session: BrowserSessionState = typeof data === 'string' ? JSON.parse(data) : data;
 
-  if (session.seed !== seed) {
-    return Response.json({ error: 'Seed mismatch' }, { status: 403 });
+  if (!session.gameOver) {
+    return Response.json({ error: 'Game is not over' }, { status: 400 });
+  }
+
+  if (session.submitted) {
+    return Response.json({ error: 'Score already submitted' }, { status: 400 });
   }
 
   const elapsed = Date.now() - session.createdAt;
@@ -71,28 +64,17 @@ export default async function handler(req: Request): Promise<Response> {
     return Response.json({ error: 'Game too short' }, { status: 403 });
   }
 
-  const expected = await computeHmac(session.secret, `${seed}:${score}:${sessionId}`);
-  if (signature !== expected) {
-    return Response.json({ error: 'Invalid signature' }, { status: 403 });
-  }
+  // Use the server-owned score
+  const score = session.score;
+  const seed = session.seed;
 
-  // Anti-cheat: require at least 1 wave completed via server tracking
-  const wavesCompleted = session.wavesCompleted ?? 0;
-  if (wavesCompleted < 1) {
-    return Response.json({ error: 'No waves completed' }, { status: 403 });
-  }
-
-  // Cap score to server-tracked max + one extra wave for partial kills during death wave
-  const trackedMax = session.maxPossibleScore ?? 0;
-  const extraWaveMax = maxScoreForWave(wavesCompleted);
-  const scoreCap = trackedMax + extraWaveMax;
-  const effectiveScore = Math.min(score, scoreCap);
-
-  await redis.del(`session:${sessionId}`);
+  // Mark submitted
+  session.submitted = true;
+  await redis.set(`session:${sessionId}`, JSON.stringify(session), { ex: 3600 });
 
   const leaderboardKey = `leaderboard:${seed}`;
   const member = `${cleaned}:h:${sessionId}`;
-  await redis.zadd(leaderboardKey, { score: effectiveScore, member });
+  await redis.zadd(leaderboardKey, { score, member });
   await redis.zremrangebyrank(leaderboardKey, 0, -11);
   await redis.expire(leaderboardKey, 604800);
 
@@ -101,6 +83,7 @@ export default async function handler(req: Request): Promise<Response> {
   return Response.json({
     valid: true,
     rank: rank !== null ? rank + 1 : -1,
+    score,
   }, {
     headers: { 'Access-Control-Allow-Origin': '*' },
   });

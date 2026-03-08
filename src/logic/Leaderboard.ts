@@ -1,4 +1,6 @@
 import { LEADERBOARD_MAX_ENTRIES } from '../config';
+import { TowerType } from '../types';
+import { WaveAction } from './WaveAction';
 
 export interface LeaderboardEntry {
   initials: string;
@@ -8,21 +10,6 @@ export interface LeaderboardEntry {
 
 export interface SessionData {
   sessionId: string;
-  secret: string;
-}
-
-async function computeHmac(secret: string, message: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(secret);
-  const msgData = encoder.encode(message);
-
-  const key = await crypto.subtle.importKey(
-    'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
-  );
-  const sig = await crypto.subtle.sign('HMAC', key, msgData);
-  return Array.from(new Uint8Array(sig))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
 }
 
 export class Leaderboard {
@@ -35,7 +22,7 @@ export class Leaderboard {
       });
       if (!res.ok) return null;
       const data = await res.json();
-      return { sessionId: data.sessionId, secret: data.secret };
+      return { sessionId: data.sessionId };
     } catch {
       return null;
     }
@@ -66,34 +53,48 @@ export class Leaderboard {
     }
   }
 
-  async addEntry(
-    seed: number,
-    initials: string,
-    score: number,
-    sessionId: string,
-    secret: string,
-  ): Promise<number> {
-    const cleaned = initials.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
-    if (cleaned.length !== 3) return -1;
-
+  async placeTower(sessionId: string, col: number, row: number, type: TowerType): Promise<boolean> {
     try {
-      const signature = await computeHmac(secret, `${seed}:${score}:${sessionId}`);
-      const res = await fetch('/api/submit-score', {
+      const res = await fetch('/api/session/place-tower', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, seed, initials: cleaned, score, signature }),
+        body: JSON.stringify({ sessionId, col, row, type }),
       });
-      if (!res.ok) return -1;
-      const data = await res.json();
-      return typeof data.rank === 'number' ? data.rank : -1;
+      return res.ok;
     } catch {
-      return -1;
+      return false;
     }
   }
 
-  async reportWaveComplete(sessionId: string): Promise<boolean> {
+  async sellTower(sessionId: string, col: number, row: number): Promise<boolean> {
     try {
-      const res = await fetch('/api/session/wave-complete', {
+      const res = await fetch('/api/session/sell-tower', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, col, row }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  async moveTower(sessionId: string, fromCol: number, fromRow: number, toCol: number, toRow: number): Promise<boolean> {
+    try {
+      const res = await fetch('/api/session/move-tower', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, fromCol, fromRow, toCol, toRow }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  async startWave(sessionId: string): Promise<boolean> {
+    try {
+      const res = await fetch('/api/session/start-wave', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId }),
@@ -101,6 +102,41 @@ export class Leaderboard {
       return res.ok;
     } catch {
       return false;
+    }
+  }
+
+  async completeWave(sessionId: string, actions: WaveAction[]): Promise<{ waveResult: unknown; state: { money: number; lives: number; score: number; currentWave: number; gameOver: boolean; towers: { col: number; row: number; type: TowerType }[] } } | null> {
+    try {
+      const res = await fetch('/api/session/wave-complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, actions }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async submitScore(sessionId: string, initials: string): Promise<{ rank: number; score: number }> {
+    const cleaned = initials.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
+    if (cleaned.length !== 3) return { rank: -1, score: 0 };
+
+    try {
+      const res = await fetch('/api/submit-score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, initials: cleaned }),
+      });
+      if (!res.ok) return { rank: -1, score: 0 };
+      const data = await res.json();
+      return {
+        rank: typeof data.rank === 'number' ? data.rank : -1,
+        score: typeof data.score === 'number' ? data.score : 0,
+      };
+    } catch {
+      return { rank: -1, score: 0 };
     }
   }
 

@@ -1,5 +1,8 @@
 import { Redis } from '@upstash/redis';
-import { maxScoreForWave } from '../../src/logic/WaveGenerator';
+import { BrowserSessionState } from '../../src/logic/BrowserSessionState';
+import { WaveAction, WaveActionType } from '../../src/logic/WaveAction';
+import { simulateWaveWithActions } from '../../src/logic/simulateWave';
+import { TowerType } from '../../src/types';
 
 export const config = { runtime: 'edge' };
 
@@ -8,7 +11,44 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN!,
 });
 
-const MIN_WAVE_INTERVAL_MS = 5000;
+const MAX_ACTIONS = 1000;
+const VALID_TOWER_TYPES = new Set(Object.values(TowerType));
+
+function validateActions(actions: unknown): WaveAction[] | null {
+  if (!Array.isArray(actions)) return null;
+  if (actions.length > MAX_ACTIONS) return null;
+
+  const validated: WaveAction[] = [];
+  let lastFrame = -1;
+
+  for (const action of actions) {
+    if (typeof action !== 'object' || action === null) return null;
+    if (typeof action.frame !== 'number' || action.frame < 0 || !Number.isInteger(action.frame)) return null;
+    if (action.frame < lastFrame) return null; // must be monotonic
+    lastFrame = action.frame;
+
+    switch (action.type) {
+      case WaveActionType.PLACE:
+        if (typeof action.col !== 'number' || typeof action.row !== 'number') return null;
+        if (!VALID_TOWER_TYPES.has(action.towerType)) return null;
+        validated.push(action as WaveAction);
+        break;
+      case WaveActionType.SELL:
+        if (typeof action.col !== 'number' || typeof action.row !== 'number') return null;
+        validated.push(action as WaveAction);
+        break;
+      case WaveActionType.MOVE:
+        if (typeof action.fromCol !== 'number' || typeof action.fromRow !== 'number' ||
+            typeof action.toCol !== 'number' || typeof action.toRow !== 'number') return null;
+        validated.push(action as WaveAction);
+        break;
+      default:
+        return null;
+    }
+  }
+
+  return validated;
+}
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
@@ -26,7 +66,7 @@ export default async function handler(req: Request): Promise<Response> {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
-  let body: { sessionId?: string };
+  let body: { sessionId?: string; actions?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -38,31 +78,37 @@ export default async function handler(req: Request): Promise<Response> {
     return Response.json({ error: 'sessionId required' }, { status: 400 });
   }
 
-  const sessionData = await redis.get(`session:${sessionId}`) as string | null;
-  if (!sessionData) {
+  const validatedActions = validateActions(body.actions);
+  if (validatedActions === null) {
+    return Response.json({ error: 'Invalid actions array' }, { status: 400 });
+  }
+
+  const data = await redis.get(`session:${sessionId}`) as string | null;
+  if (!data) {
     return Response.json({ error: 'Invalid or expired session' }, { status: 403 });
   }
 
-  const session = typeof sessionData === 'string' ? JSON.parse(sessionData) : sessionData;
+  const session: BrowserSessionState = typeof data === 'string' ? JSON.parse(data) : data;
 
-  const now = Date.now();
-  const elapsed = now - (session.lastWaveAt ?? session.createdAt);
-  if (elapsed < MIN_WAVE_INTERVAL_MS) {
-    return Response.json({ error: 'Too fast between waves' }, { status: 429 });
+  if (!session.waveInProgress) {
+    return Response.json({ error: 'No wave in progress' }, { status: 400 });
   }
 
-  const waveNumber = session.wavesCompleted ?? 0;
-  const waveMax = maxScoreForWave(waveNumber);
+  // Run authoritative simulation
+  const { result, state: updatedState } = simulateWaveWithActions(session, validatedActions);
 
-  session.wavesCompleted = waveNumber + 1;
-  session.maxPossibleScore = (session.maxPossibleScore ?? 0) + waveMax;
-  session.lastWaveAt = now;
-
-  await redis.set(`session:${sessionId}`, JSON.stringify(session), { ex: 3600 });
+  await redis.set(`session:${sessionId}`, JSON.stringify(updatedState), { ex: 3600 });
 
   return Response.json({
-    wavesCompleted: session.wavesCompleted,
-    maxPossibleScore: session.maxPossibleScore,
+    waveResult: result,
+    state: {
+      money: updatedState.money,
+      lives: updatedState.lives,
+      score: updatedState.score,
+      currentWave: updatedState.currentWave,
+      gameOver: updatedState.gameOver,
+      towers: updatedState.towers,
+    },
   }, {
     headers: { 'Access-Control-Allow-Origin': '*' },
   });
