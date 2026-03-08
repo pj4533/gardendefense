@@ -69,6 +69,7 @@ export class GameScene extends Phaser.Scene {
 
   private gameOverTriggered: boolean = false;
   private gameOverTimer: number = 0;
+  private isHighScore: boolean | null = null;
   private seed: number = 0;
   private seedLabel: string = '';
   private sessionData: SessionData | null = null;
@@ -102,6 +103,7 @@ export class GameScene extends Phaser.Scene {
     this.pointerDown = false;
     this.gameOverTriggered = false;
     this.gameOverTimer = 0;
+    this.isHighScore = null;
     this.sessionData = null;
 
     this.seed = getDailySeed();
@@ -500,14 +502,23 @@ export class GameScene extends Phaser.Scene {
 
     if (this.gameOverTriggered) {
       this.gameOverTimer -= dt;
-      if (this.gameOverTimer <= 0) {
-        this.scene.start('GameOverScene', {
-          score: this.engine.state.score,
-          seed: this.seed,
-          seedLabel: this.seedLabel,
-          sessionId: this.sessionData?.sessionId ?? '',
-          secret: this.sessionData?.secret ?? '',
-        });
+      if (this.gameOverTimer <= 0 && this.isHighScore !== null) {
+        if (this.isHighScore) {
+          this.scene.start('GameOverScene', {
+            score: this.engine.state.score,
+            seed: this.seed,
+            seedLabel: this.seedLabel,
+            sessionId: this.sessionData?.sessionId ?? '',
+            secret: this.sessionData?.secret ?? '',
+          });
+        } else {
+          this.scene.start('LeaderboardScene', {
+            score: this.engine.state.score,
+            initials: '',
+            seed: this.seed,
+            seedLabel: this.seedLabel,
+          });
+        }
       }
       return;
     }
@@ -536,8 +547,16 @@ export class GameScene extends Phaser.Scene {
     if (this.engine.state.gameOver && !this.gameOverTriggered) {
       this.gameOverTriggered = true;
       this.gameOverTimer = 1.5;
+      this.isHighScore = null;
       this.messageText.setText('GARDEN DESTROYED!');
       this.messageText.setColor('#ff4444');
+
+      const leaderboard = new Leaderboard();
+      leaderboard.isHighScore(this.seed, this.engine.state.score).then(result => {
+        this.isHighScore = result;
+      }).catch(() => {
+        this.isHighScore = true; // Default to showing initials entry on error
+      });
     }
   }
 

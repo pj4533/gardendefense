@@ -152,10 +152,21 @@ export class LeaderboardScene extends Phaser.Scene {
       }
     }
 
+    // Show player's score if they didn't make the leaderboard
+    const didNotQualify = this.playerScore > 0 && this.playerInitials === '' && !this.fromGame;
+    if (didNotQualify) {
+      const yourScoreY = startY + 10 * rowHeight + 10;
+      sep.fillStyle(0x006666);
+      sep.fillRect(50, yourScoreY - 8, canvasWidth - 100, 1);
+      this.add.text(cx, yourScoreY + 6, `YOUR SCORE: ${this.playerScore}`, {
+        fontSize: '10px', color: '#ff4444', fontFamily: ARCADE_FONT,
+      }).setOrigin(0.5);
+    }
+
     // Nav buttons
     const isViewOnly = this.playerInitials === '';
     const navBtnH = isMobile ? 52 : 44;
-    const btnY = startY + 10 * rowHeight + 30;
+    const btnY = startY + 10 * rowHeight + (didNotQualify ? 55 : 30);
 
     const resumeGame = () => {
       this.scene.stop();
@@ -164,9 +175,6 @@ export class LeaderboardScene extends Phaser.Scene {
 
     if (this.fromGame) {
       this.createNavButton(cx, btnY, 160, navBtnH, 'BACK', 0xffff00, resumeGame);
-    } else if (isViewOnly) {
-      this.createNavButton(cx - 80, btnY, 230, navBtnH, 'PLAY AGAIN', 0x00ff66, () => this.scene.start('GameScene'));
-      this.createNavButton(cx + 140, btnY, 120, navBtnH, 'BACK', 0xffff00, () => this.scene.start('GameScene'));
     } else {
       this.createNavButton(cx, btnY, 250, navBtnH, 'PLAY AGAIN', 0x00ff66, () => this.scene.start('GameScene'));
     }
