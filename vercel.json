@@ -2,6 +2,9 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/.well-known/skills/default/skill.md", "destination": "/api/well-known-skill" },
+    { "source": "/llms.txt", "destination": "/api/llms-txt" },
+    { "source": "/openapi.json", "destination": "/api/openapi-json" },
     { "source": "/api/(.*)", "destination": "/api/$1" }
   ]
 }

@@ -78,7 +78,7 @@ export default async function handler(req: Request): Promise<Response> {
   await redis.del(`session:${sessionId}`);
 
   const leaderboardKey = `leaderboard:${seed}`;
-  const member = `${cleaned}:${sessionId}`;
+  const member = `${cleaned}:h:${sessionId}`;
   await redis.zadd(leaderboardKey, { score, member });
   await redis.zremrangebyrank(leaderboardKey, 0, -11);
   await redis.expire(leaderboardKey, 604800);

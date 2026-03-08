@@ -3,6 +3,7 @@ import { LEADERBOARD_MAX_ENTRIES } from '../config';
 export interface LeaderboardEntry {
   initials: string;
   score: number;
+  isAgent?: boolean;
 }
 
 export interface SessionData {
@@ -54,6 +55,11 @@ export class Leaderboard {
             typeof (e as LeaderboardEntry).initials === 'string' &&
             typeof (e as LeaderboardEntry).score === 'number',
         )
+        .map(e => ({
+          initials: e.initials,
+          score: e.score,
+          isAgent: (e as { isAgent?: boolean }).isAgent === true,
+        }))
         .slice(0, LEADERBOARD_MAX_ENTRIES);
     } catch {
       return [];

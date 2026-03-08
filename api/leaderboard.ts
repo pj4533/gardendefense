@@ -32,12 +32,15 @@ export default async function handler(req: Request): Promise<Response> {
   const leaderboardKey = `leaderboard:${seed}`;
   const results = await redis.zrange(leaderboardKey, 0, 9, { rev: true, withScores: true });
 
-  const entries: { initials: string; score: number }[] = [];
+  const entries: { initials: string; score: number; isAgent: boolean }[] = [];
   for (let i = 0; i < results.length; i += 2) {
     const member = String(results[i]);
     const score = Number(results[i + 1]);
-    const initials = member.split(':')[0];
-    entries.push({ initials, score });
+    const parts = member.split(':');
+    const initials = parts[0];
+    // Format: "ABC:a:uuid" for agents, "ABC:h:uuid" or "ABC:uuid" for humans
+    const isAgent = parts.length >= 3 && parts[1] === 'a';
+    entries.push({ initials, score, isAgent });
   }
 
   return Response.json(entries, {
