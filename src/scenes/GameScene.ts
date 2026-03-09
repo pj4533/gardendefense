@@ -188,14 +188,16 @@ export class GameScene extends Phaser.Scene {
       const bs = (color: string): Phaser.Types.GameObjects.Text.TextStyle => ({
         fontSize: '8px', color, fontFamily: ARCADE_FONT,
       });
-      this.moneyText = this.add.text(210, 14, '', bs('#00ff66')).setOrigin(0, 0.5).setDepth(12);
-      this.livesText = this.add.text(310, 14, '', bs('#ff4444')).setOrigin(0, 0.5).setDepth(12);
-      this.waveText = this.add.text(410, 14, '', bs('#00ffff')).setOrigin(0, 0.5).setDepth(12);
-      this.scoreText = this.add.text(530, 14, '', bs('#ffff00')).setOrigin(0, 0.5).setDepth(12);
+      this.moneyText = this.add.text(200, 14, '', bs('#00ff66')).setOrigin(0, 0.5).setDepth(12);
+      this.livesText = this.add.text(290, 14, '', bs('#ff4444')).setOrigin(0, 0.5).setDepth(12);
+      this.waveText = this.add.text(380, 14, '', bs('#00ffff')).setOrigin(0, 0.5).setDepth(12);
+      this.scoreText = this.add.text(490, 14, '', bs('#ffff00')).setOrigin(0, 0.5).setDepth(12);
 
-      // Hidden placeholders to avoid null checks
-      this.humansText = this.add.text(0, 0, '').setVisible(false);
-      this.agentsText = this.add.text(0, 0, '').setVisible(false);
+      const cs = (color: string): Phaser.Types.GameObjects.Text.TextStyle => ({
+        fontSize: '6px', color, fontFamily: ARCADE_FONT,
+      });
+      this.agentsText = this.add.text(cw - 6, 10, '0 AGENTS', cs('#886eff')).setOrigin(1, 0.5).setDepth(12);
+      this.humansText = this.add.text(cw - 6, 20, '0 HUMANS', cs('#448866')).setOrigin(1, 0.5).setDepth(12);
     } else {
       this.add.text(cw / 2, 14, 'DAILY DEFENSE', {
         fontSize: '16px', color: '#00ffff', fontFamily: ARCADE_FONT,
@@ -797,4 +799,5 @@ export class GameScene extends Phaser.Scene {
       this.humansText.setX(this.agentsText.x - this.agentsText.width - 12);
     }
   }
+
 }
