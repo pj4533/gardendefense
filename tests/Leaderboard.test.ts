@@ -24,22 +24,42 @@ describe('Leaderboard', () => {
         { initials: 'BBB', score: 100 },
       ]));
       const lb = new Leaderboard();
-      const entries = await lb.getEntries(20260307);
-      expect(entries).toHaveLength(2);
-      expect(entries[0].score).toBe(200);
-      expect(mockFetch).toHaveBeenCalledWith('/api/leaderboard?seed=20260307');
+      const result = await lb.getEntries(20260307);
+      expect(result.error).toBe(false);
+      expect(result.entries).toHaveLength(2);
+      expect(result.entries[0].score).toBe(200);
+      expect(mockFetch).toHaveBeenCalledWith('/api/leaderboard?seed=20260307', expect.objectContaining({ signal: expect.any(AbortSignal) }));
     });
 
-    it('returns empty array on fetch error', async () => {
+    it('returns error on fetch failure after retry', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('network'));
       mockFetch.mockRejectedValueOnce(new Error('network'));
       const lb = new Leaderboard();
-      expect(await lb.getEntries(20260307)).toEqual([]);
+      const result = await lb.getEntries(20260307);
+      expect(result.error).toBe(true);
+      expect(result.entries).toEqual([]);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
-    it('returns empty array on non-ok response', async () => {
+    it('retries once on non-ok response then succeeds', async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([], false));
+      mockFetch.mockReturnValueOnce(jsonResponse([
+        { initials: 'AAA', score: 100 },
+      ]));
+      const lb = new Leaderboard();
+      const result = await lb.getEntries(20260307);
+      expect(result.error).toBe(false);
+      expect(result.entries).toHaveLength(1);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('returns error after two non-ok responses', async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([], false));
       mockFetch.mockReturnValueOnce(jsonResponse([], false));
       const lb = new Leaderboard();
-      expect(await lb.getEntries(20260307)).toEqual([]);
+      const result = await lb.getEntries(20260307);
+      expect(result.error).toBe(true);
+      expect(result.entries).toEqual([]);
     });
 
     it('filters invalid entries', async () => {
@@ -49,8 +69,8 @@ describe('Leaderboard', () => {
         { initials: 123, score: 'wrong' },
       ]));
       const lb = new Leaderboard();
-      const entries = await lb.getEntries(20260307);
-      expect(entries).toHaveLength(1);
+      const result = await lb.getEntries(20260307);
+      expect(result.entries).toHaveLength(1);
     });
 
     it('preserves server order (already sorted by score descending)', async () => {
@@ -60,8 +80,8 @@ describe('Leaderboard', () => {
         { initials: 'LOW', score: 50 },
       ]));
       const lb = new Leaderboard();
-      const entries = await lb.getEntries(20260307);
-      expect(entries.map(e => e.score)).toEqual([500, 200, 50]);
+      const result = await lb.getEntries(20260307);
+      expect(result.entries.map(e => e.score)).toEqual([500, 200, 50]);
     });
   });
 

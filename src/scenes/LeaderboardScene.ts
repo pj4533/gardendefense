@@ -72,11 +72,59 @@ export class LeaderboardScene extends Phaser.Scene {
       fontSize: '12px', color: '#444444', fontFamily: ARCADE_FONT,
     }).setOrigin(0.5);
 
+    this.fetchAndRender(cx, loadingText);
+  }
+
+  private fetchAndRender(cx: number, loadingText: Phaser.GameObjects.Text): void {
     const leaderboard = new Leaderboard();
-    leaderboard.getEntries(this.seed).then(entries => {
+    leaderboard.getEntries(this.seed).then(result => {
+      if (!this.scene.isActive()) return;
       loadingText.destroy();
-      this.renderEntries(entries, cx);
+      if (result.error) {
+        this.renderError(cx);
+      } else {
+        this.renderEntries(result.entries, cx);
+      }
+    }).catch(() => {
+      if (!this.scene.isActive()) return;
+      loadingText.destroy();
+      this.renderError(cx);
     });
+  }
+
+  private renderError(cx: number): void {
+    const { canvasHeight, isMobile } = layout;
+
+    this.add.text(cx, 240, 'COULD NOT LOAD SCORES', {
+      fontSize: '12px', color: '#ff4444', fontFamily: ARCADE_FONT,
+    }).setOrigin(0.5);
+
+    this.add.text(cx, 270, 'CHECK CONNECTION AND TRY AGAIN', {
+      fontSize: '8px', color: '#666666', fontFamily: ARCADE_FONT,
+    }).setOrigin(0.5);
+
+    const btnH = isMobile ? 52 : 44;
+    this.createNavButton(cx, 320, 160, btnH, 'RETRY', 0xff4444, () => {
+      this.scene.restart({
+        score: this.playerScore,
+        initials: this.playerInitials,
+        seed: this.seed,
+        seedLabel: this.seedLabel,
+        fromGame: this.fromGame,
+      });
+    });
+
+    // Also show back/play button below retry
+    const navBtnY = 380;
+    const resumeGame = () => {
+      this.scene.stop();
+      this.scene.wake('GameScene');
+    };
+    if (this.fromGame) {
+      this.createNavButton(cx, navBtnY, 160, btnH, 'BACK', 0xffff00, resumeGame);
+    } else {
+      this.createNavButton(cx, navBtnY, 250, btnH, 'PLAY AGAIN', 0x00ff66, () => this.scene.start('GameScene'));
+    }
   }
 
   private solidBorder(g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, t: number): void {

@@ -8,6 +8,11 @@ export interface LeaderboardEntry {
   isAgent?: boolean;
 }
 
+export interface LeaderboardResult {
+  entries: LeaderboardEntry[];
+  error: boolean;
+}
+
 export interface SessionData {
   sessionId: string;
 }
@@ -28,29 +33,35 @@ export class Leaderboard {
     }
   }
 
-  async getEntries(seed: number): Promise<LeaderboardEntry[]> {
-    try {
-      const res = await fetch(`/api/leaderboard?seed=${seed}`);
-      if (!res.ok) return [];
-      const data = await res.json();
-      if (!Array.isArray(data)) return [];
-      return data
-        .filter(
-          (e: unknown): e is LeaderboardEntry =>
-            typeof e === 'object' &&
-            e !== null &&
-            typeof (e as LeaderboardEntry).initials === 'string' &&
-            typeof (e as LeaderboardEntry).score === 'number',
-        )
-        .map(e => ({
-          initials: e.initials,
-          score: e.score,
-          isAgent: (e as { isAgent?: boolean }).isAgent === true,
-        }))
-        .slice(0, LEADERBOARD_MAX_ENTRIES);
-    } catch {
-      return [];
+  async getEntries(seed: number): Promise<LeaderboardResult> {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch(`/api/leaderboard?seed=${seed}`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (!Array.isArray(data)) continue;
+        const entries = data
+          .filter(
+            (e: unknown): e is LeaderboardEntry =>
+              typeof e === 'object' &&
+              e !== null &&
+              typeof (e as LeaderboardEntry).initials === 'string' &&
+              typeof (e as LeaderboardEntry).score === 'number',
+          )
+          .map(e => ({
+            initials: e.initials,
+            score: e.score,
+            isAgent: (e as { isAgent?: boolean }).isAgent === true,
+          }))
+          .slice(0, LEADERBOARD_MAX_ENTRIES);
+        return { entries, error: false };
+      } catch {
+        // Retry on first attempt, give up on second
+      }
     }
+    return { entries: [], error: true };
   }
 
   async placeTower(sessionId: string, col: number, row: number, type: TowerType): Promise<boolean> {
@@ -141,8 +152,9 @@ export class Leaderboard {
   }
 
   async isHighScore(seed: number, score: number): Promise<boolean> {
-    const entries = await this.getEntries(seed);
-    if (entries.length < LEADERBOARD_MAX_ENTRIES) return true;
-    return score > entries[entries.length - 1].score;
+    const result = await this.getEntries(seed);
+    if (result.error) return true; // Assume high score on error so user can enter initials
+    if (result.entries.length < LEADERBOARD_MAX_ENTRIES) return true;
+    return score > result.entries[result.entries.length - 1].score;
   }
 }
