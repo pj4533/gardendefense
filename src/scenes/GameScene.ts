@@ -11,7 +11,7 @@ import {
 import { layout } from '../layout';
 import { generateRandomPath } from '../logic/MapGenerator';
 import { generateWave } from '../logic/WaveGenerator';
-import { generateWaveSchedule, getWaveProfile, WaveProfileName } from '../logic/WaveSchedule';
+import { generateWaveSchedule, WaveProfileName } from '../logic/WaveSchedule';
 import { mulberry32 } from '../logic/seedRng';
 import { getDailySeed, getDailySeedLabel } from '../logic/dailySeed';
 import { Leaderboard, SessionData, ActivePlayers } from '../logic/Leaderboard';
@@ -32,6 +32,14 @@ const ENEMY_SPRITE: Record<number, { key: string; move: string; originY: number 
 };
 
 const ARCADE_FONT = '"Press Start 2P", monospace';
+
+const PROFILE_COLORS: Record<string, string> = {
+  balanced: '#00ffff',
+  swarm:    '#ff8844',
+  siege:    '#44dd88',
+  rush:     '#ffff44',
+  horde:    '#cc66ff',
+};
 
 interface ArcadeBtn {
   g: Phaser.GameObjects.Graphics;
@@ -307,10 +315,14 @@ export class GameScene extends Phaser.Scene {
       this.waveText = this.add.text(350, statsY, '', s('#00ffff'));
       this.scoreText = this.add.text(480, statsY, '', s('#ffff00'));
 
-      // Wave profile preview — small text between stats row and separator
-      this.waveProfileText = this.add.text(350, GAME_HEIGHT + 17, '', {
-        fontSize: '7px', color: '#559999', fontFamily: ARCADE_FONT,
-      });
+      // Thin separator above wave profile bar
+      hud.fillStyle(0x002a2a);
+      hud.fillRect(8, GAME_HEIGHT + 68, cw - 16, 1);
+
+      // Wave profile bar — bottom 28px of HUD, below buttons
+      this.waveProfileText = this.add.text(cw / 2, GAME_HEIGHT + 79, '', {
+        fontSize: '9px', color: '#00ffff', fontFamily: ARCADE_FONT,
+      }).setOrigin(0.5, 0.5).setDepth(12);
     }
 
     // Action buttons — computed layout
@@ -800,18 +812,22 @@ export class GameScene extends Phaser.Scene {
     this.moneyText.setText(`$${this.engine.state.money}`);
     this.livesText.setText(`HP ${this.engine.state.lives}`);
     const currentWave = this.engine.waveManager.currentWave;
-    const currentProfile = getWaveProfile(this.waveSchedule[currentWave] ?? 'balanced');
-    this.waveText.setText(`WAVE ${currentWave} ${currentProfile.symbol}`);
+    this.waveText.setText(`WAVE ${currentWave}`);
     this.scoreText.setText(`${this.engine.state.score} PTS`);
 
-    // Desktop only: show next 2 wave profile previews
+    // Desktop only: wave profile bar below buttons
     if (!layout.isMobile) {
+      const currentProfileName = this.waveSchedule[currentWave] ?? 'balanced';
       const next1 = this.waveSchedule[currentWave + 1];
       const next2 = this.waveSchedule[currentWave + 2];
-      let preview = '';
-      if (next1) preview += `▶${getWaveProfile(next1).symbol}`;
-      if (next2) preview += ` ▶${getWaveProfile(next2).symbol}`;
-      this.waveProfileText.setText(preview);
+
+      let text = currentProfileName.toUpperCase();
+      if (next1) text += `  >  ${next1.toUpperCase()}`;
+      if (next2) text += `  >  ${next2.toUpperCase()}`;
+      this.waveProfileText.setText(text);
+
+      const color = PROFILE_COLORS[currentProfileName] ?? '#00ffff';
+      this.waveProfileText.setColor(color);
     }
   }
 
