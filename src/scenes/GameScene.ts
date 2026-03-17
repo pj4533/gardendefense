@@ -41,6 +41,14 @@ const PROFILE_COLORS: Record<string, string> = {
   horde:    '#cc66ff',
 };
 
+function dimProfileColor(hex: string): string {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.round(((n >> 16) & 0xff) * 0.45).toString(16).padStart(2, '0');
+  const g = Math.round(((n >> 8)  & 0xff) * 0.45).toString(16).padStart(2, '0');
+  const b = Math.round((n         & 0xff) * 0.45).toString(16).padStart(2, '0');
+  return `#${r}${g}${b}`;
+}
+
 interface ArcadeBtn {
   g: Phaser.GameObjects.Graphics;
   label: Phaser.GameObjects.Text;
@@ -61,7 +69,13 @@ export class GameScene extends Phaser.Scene {
   private moneyText!: Phaser.GameObjects.Text;
   private livesText!: Phaser.GameObjects.Text;
   private waveText!: Phaser.GameObjects.Text;
-  private waveProfileParts: Phaser.GameObjects.Text[] = [];
+  // Wave profile bar — current (hero) + upcoming (secondary)
+  private waveBarBg: Phaser.GameObjects.Graphics | null = null;
+  private waveBarNow: Phaser.GameObjects.Text | null = null;
+  private waveBarCurrent: Phaser.GameObjects.Text | null = null;
+  private waveBarNext1: Phaser.GameObjects.Text | null = null;
+  private waveBarSep: Phaser.GameObjects.Text | null = null;
+  private waveBarNext2: Phaser.GameObjects.Text | null = null;
   private scoreText!: Phaser.GameObjects.Text;
   private messageText!: Phaser.GameObjects.Text;
   private waveSchedule: WaveProfileName[] = [];
@@ -315,24 +329,38 @@ export class GameScene extends Phaser.Scene {
       this.scoreText = this.add.text(480, statsY, '', s('#ffff00'));
 
       // Thin separator above wave profile bar
-      hud.fillStyle(0x002a2a);
-      hud.fillRect(8, GAME_HEIGHT + 68, cw - 16, 1);
+      hud.fillStyle(0x112222);
+      hud.fillRect(0, GAME_HEIGHT + 68, cw, 1);
 
-      // Wave profile bar — 5 parts: name, sep, name, sep, name
-      const profileY = GAME_HEIGHT + 79;
-      const sepStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-        fontSize: '9px', color: '#335555', fontFamily: ARCADE_FONT,
-      };
-      const nameStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-        fontSize: '9px', color: '#ffffff', fontFamily: ARCADE_FONT,
-      };
-      this.waveProfileParts = [
-        this.add.text(0, profileY, '', nameStyle).setOrigin(0, 0.5).setDepth(12), // current
-        this.add.text(0, profileY, ' > ', sepStyle).setOrigin(0, 0.5).setDepth(12), // sep
-        this.add.text(0, profileY, '', nameStyle).setOrigin(0, 0.5).setDepth(12), // next1
-        this.add.text(0, profileY, ' > ', sepStyle).setOrigin(0, 0.5).setDepth(12), // sep
-        this.add.text(0, profileY, '', nameStyle).setOrigin(0, 0.5).setDepth(12), // next2
-      ];
+      // Wave profile bar — LEFT: hero current, RIGHT: dim upcoming queue
+      const barY = GAME_HEIGHT + 80;
+
+      // Background graphics for current profile highlight (redrawn each frame)
+      this.waveBarBg = this.add.graphics().setDepth(11);
+
+      // "NOW" dim label
+      this.waveBarNow = this.add.text(12, barY, 'NOW', {
+        fontSize: '6px', color: '#2a4a4a', fontFamily: ARCADE_FONT,
+      }).setOrigin(0, 0.5).setDepth(12);
+
+      // Current profile name — bracketed, hero treatment
+      this.waveBarCurrent = this.add.text(0, barY, '', {
+        fontSize: '9px', color: '#00ffff', fontFamily: ARCADE_FONT,
+      }).setOrigin(0, 0.5).setDepth(12);
+
+      // Upcoming: separator dot
+      this.waveBarSep = this.add.text(0, barY, '·', {
+        fontSize: '7px', color: '#1a3333', fontFamily: ARCADE_FONT,
+      }).setOrigin(0, 0.5).setDepth(12);
+
+      // Upcoming: next1 and next2 names (dim, 7px, right-aligned group)
+      this.waveBarNext1 = this.add.text(0, barY, '', {
+        fontSize: '7px', color: '#335555', fontFamily: ARCADE_FONT,
+      }).setOrigin(0, 0.5).setDepth(12);
+
+      this.waveBarNext2 = this.add.text(0, barY, '', {
+        fontSize: '7px', color: '#335555', fontFamily: ARCADE_FONT,
+      }).setOrigin(0, 0.5).setDepth(12);
     }
 
     // Action buttons — computed layout
@@ -825,29 +853,49 @@ export class GameScene extends Phaser.Scene {
     this.waveText.setText(`WAVE ${currentWave}`);
     this.scoreText.setText(`${this.engine.state.score} PTS`);
 
-    // Desktop only: wave profile bar — each name independently colored
-    if (!layout.isMobile && this.waveProfileParts.length === 5) {
+    // Desktop only: wave profile bar — hero current left, dim upcoming right
+    if (!layout.isMobile && this.waveBarCurrent) {
       const cw = GRID_COLS * TILE_SIZE;
+      const barY = GAME_HEIGHT + 80;
       const currentProfileName = this.waveSchedule[currentWave] ?? 'balanced';
       const next1 = this.waveSchedule[currentWave + 1];
       const next2 = this.waveSchedule[currentWave + 2];
+      const profileColor = PROFILE_COLORS[currentProfileName] ?? '#00ffff';
 
-      // Set text and individual colors
-      this.waveProfileParts[0].setText(currentProfileName.toUpperCase()).setColor(PROFILE_COLORS[currentProfileName] ?? '#00ffff');
-      this.waveProfileParts[1].setVisible(!!next1);
-      this.waveProfileParts[2].setText(next1 ? next1.toUpperCase() : '').setVisible(!!next1);
-      if (next1) this.waveProfileParts[2].setColor(PROFILE_COLORS[next1] ?? '#00ffff');
-      this.waveProfileParts[3].setVisible(!!next2);
-      this.waveProfileParts[4].setText(next2 ? next2.toUpperCase() : '').setVisible(!!next2);
-      if (next2) this.waveProfileParts[4].setColor(PROFILE_COLORS[next2] ?? '#00ffff');
+      // ── LEFT: hero current profile ──
+      this.waveBarCurrent.setText(`[${currentProfileName.toUpperCase()}]`).setColor(profileColor);
+      const nowW = this.waveBarNow!.width;
+      const currentX = 12 + nowW + 8;
+      this.waveBarCurrent.setX(currentX);
 
-      // Center the group horizontally
-      const visibleParts = this.waveProfileParts.filter(p => p.visible);
-      const totalWidth = visibleParts.reduce((sum, p) => sum + p.width, 0);
-      let x = cw / 2 - totalWidth / 2;
-      for (const part of visibleParts) {
-        part.setX(x);
-        x += part.width;
+      // Neon bg rect behind [NAME]
+      const hexColor = parseInt(profileColor.slice(1), 16);
+      this.waveBarBg!.clear();
+      this.waveBarBg!.fillStyle(hexColor, 0.1);
+      this.waveBarBg!.fillRect(currentX - 4, barY - 8, this.waveBarCurrent.width + 8, 17);
+      this.waveBarBg!.lineStyle(1, hexColor, 0.5);
+      this.waveBarBg!.strokeRect(currentX - 4, barY - 8, this.waveBarCurrent.width + 8, 17);
+
+      // ── RIGHT: upcoming queue, right-aligned ──
+      this.waveBarNext1!.setText(next1 ? next1.toUpperCase() : '').setVisible(!!next1);
+      if (next1) this.waveBarNext1!.setColor(dimProfileColor(PROFILE_COLORS[next1] ?? '#00ffff'));
+      this.waveBarNext2!.setText(next2 ? next2.toUpperCase() : '').setVisible(!!next2);
+      if (next2) this.waveBarNext2!.setColor(dimProfileColor(PROFILE_COLORS[next2] ?? '#00ffff'));
+      this.waveBarSep!.setVisible(!!next1 && !!next2);
+
+      // Position right group flush to right edge
+      const gap = 10;
+      let rx = cw - 12;
+      if (next2) {
+        this.waveBarNext2!.setX(rx - this.waveBarNext2!.width);
+        rx = this.waveBarNext2!.x - gap;
+      }
+      if (next1 && next2) {
+        this.waveBarSep!.setX(rx - this.waveBarSep!.width);
+        rx = this.waveBarSep!.x - gap;
+      }
+      if (next1) {
+        this.waveBarNext1!.setX(rx - this.waveBarNext1!.width);
       }
     }
   }
