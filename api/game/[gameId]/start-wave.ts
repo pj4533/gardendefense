@@ -2,6 +2,7 @@ import { Redis } from '@upstash/redis';
 import { simulateWave } from '../../../src/logic/simulateWave';
 import { AgentGameState } from '../../../src/logic/AgentGameState';
 import { trackActivity } from '../../_trackActivity';
+import { generateWaveSchedule, getWaveProfile } from '../../../src/logic/WaveSchedule';
 
 export const config = { runtime: 'edge' };
 
@@ -72,6 +73,30 @@ export default async function handler(req: Request): Promise<Response> {
 
   await redis.set(`game:${gameId}`, JSON.stringify(updatedState), { ex: 3600 });
 
+  // Wave profile info
+  const schedule = generateWaveSchedule(gameState.seed);
+  const justRunWave = gameState.currentWave;
+  const justRunProfileName = schedule[justRunWave] ?? 'balanced';
+  const waveProfile = {
+    wave: justRunWave,
+    profile: justRunProfileName,
+    symbol: getWaveProfile(justRunProfileName).symbol,
+  };
+
+  const nextWave = updatedState.currentWave;
+  const nextWavePreview = [
+    ...(schedule[nextWave] ? [{
+      wave: nextWave,
+      profile: schedule[nextWave],
+      symbol: getWaveProfile(schedule[nextWave]).symbol,
+    }] : []),
+    ...(schedule[nextWave + 1] ? [{
+      wave: nextWave + 1,
+      profile: schedule[nextWave + 1],
+      symbol: getWaveProfile(schedule[nextWave + 1]).symbol,
+    }] : []),
+  ];
+
   const response: Record<string, unknown> = {
     waveResult: result,
     state: {
@@ -82,6 +107,8 @@ export default async function handler(req: Request): Promise<Response> {
       gameOver: updatedState.gameOver,
       towers: updatedState.towers,
     },
+    waveProfile,
+    nextWavePreview,
   };
 
   if (updatedState.gameOver) {

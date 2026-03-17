@@ -165,6 +165,28 @@ When game ends (lives hit 0):
 - Speed: `min(base * (1 + 0.08 * wave), base * 2.5)`
 - Reward: `base + floor(wave * 0.5)`
 
+## Wave Profiles
+
+Every wave has a **profile** that changes enemy composition and speed. The profile schedule is seeded by the daily seed — all agents and humans see the same sequence.
+
+| Profile | Symbol | Count Mult | Speed Mult | Enemy Mix |
+|---------|--------|-----------|-----------|-----------|
+| Balanced | ⚔️ | 1.0× | 1.0× | Standard ratios |
+| Swarm | 🐜 | 1.2× | 1.2× | More ants, few beetles — fast swarms |
+| Siege | 🪲 | 0.8× | 0.8× | Heavy beetles, few ants — tanky but slow |
+| Rush | 💨 | 0.6× | 1.5× | Only ants and aphids, no beetles — very fast |
+| Horde | 🌊 | 2.5× | 1.0× | Massive counts, extra aphids — overwhelm |
+
+**Unlock schedule:** Siege and Rush unlock at wave 3; Horde unlocks at wave 6.
+
+The API returns `wavePreview` (from `/state`) and `waveProfile` / `nextWavePreview` (from `/start-wave`) so agents can plan tower composition ahead of time.
+
+**Profile strategy tips:**
+- **Swarm 🐜** — Spiders are essential to slow the ants; Ladybugs mop up quickly
+- **Siege 🪲** — Mantises shine against the high-HP beetles; Spiders less needed
+- **Rush 💨** — No beetles at all; maximize Ladybug+Spider combos for rapid ants
+- **Horde 🌊** — Maximize DPS coverage across the full path; Ladybugs everywhere
+
 ## Strategy Tips
 
 1. **Ladybugs are cost-efficient early** — highest DPS (30) at lowest cost, place where the path doubles back for maximum coverage

@@ -2,6 +2,7 @@ import { TowerType } from '../types';
 import { GRID_COLS, GRID_ROWS, TILE_SIZE } from '../config';
 import { GameEngine } from './GameEngine';
 import { generateWave } from './WaveGenerator';
+import { generateWaveSchedule } from './WaveSchedule';
 import { AgentGameState } from './AgentGameState';
 import { BrowserSessionState } from './BrowserSessionState';
 import { WaveAction, WaveActionType } from './WaveAction';
@@ -15,12 +16,15 @@ export interface WaveResult {
 }
 
 export function simulateWave(state: AgentGameState): { result: WaveResult; state: AgentGameState } {
+  const schedule = generateWaveSchedule(state.seed);
+  const waveGen = (n: number) => generateWave(n, schedule[n] ?? 'balanced');
+
   const engine = new GameEngine(
     GRID_COLS,
     GRID_ROWS,
     TILE_SIZE,
     state.waypoints,
-    generateWave,
+    waveGen,
     state.money,
     state.lives,
   );
@@ -41,9 +45,9 @@ export function simulateWave(state: AgentGameState): { result: WaveResult; state
   const moneyBefore = engine.state.money;
   const scoreBefore = engine.state.score;
 
-  // Count total spawns by wrapping the wave generator
+  // Count total spawns using the schedule-aware generator
   let totalSpawned = 0;
-  const waveConfig = generateWave(state.currentWave);
+  const waveConfig = generateWave(state.currentWave, schedule[state.currentWave] ?? 'balanced');
   for (const group of waveConfig.enemies) {
     totalSpawned += group.count;
   }
@@ -105,12 +109,15 @@ export function simulateWaveWithActions(
   state: BrowserSessionState,
   actions: WaveAction[],
 ): { result: WaveResult; state: BrowserSessionState } {
+  const schedule = generateWaveSchedule(state.seed);
+  const waveGen = (n: number) => generateWave(n, schedule[n] ?? 'balanced');
+
   const engine = new GameEngine(
     GRID_COLS,
     GRID_ROWS,
     TILE_SIZE,
     state.waypoints,
-    generateWave,
+    waveGen,
     state.money,
     state.lives,
   );
@@ -131,9 +138,9 @@ export function simulateWaveWithActions(
   const moneyBefore = engine.state.money;
   const scoreBefore = engine.state.score;
 
-  // Count total spawns
+  // Count total spawns using the schedule-aware generator
   let totalSpawned = 0;
-  const waveConfig = generateWave(state.currentWave);
+  const waveConfig = generateWave(state.currentWave, schedule[state.currentWave] ?? 'balanced');
   for (const group of waveConfig.enemies) {
     totalSpawned += group.count;
   }

@@ -3,6 +3,7 @@ import { GRID_COLS, GRID_ROWS, TILE_SIZE } from '../../../src/config';
 import { CellType } from '../../../src/types';
 import { GameMap } from '../../../src/logic/GameMap';
 import { AgentGameState } from '../../../src/logic/AgentGameState';
+import { generateWaveSchedule, getWaveProfile } from '../../../src/logic/WaveSchedule';
 
 export const config = { runtime: 'edge' };
 
@@ -54,6 +55,29 @@ export default async function handler(req: Request): Promise<Response> {
     }
   }
 
+  const schedule = generateWaveSchedule(gameState.seed);
+  const currentWave = gameState.currentWave;
+  const currentProfileName = schedule[currentWave] ?? 'balanced';
+  const wavePreview = {
+    current: {
+      wave: currentWave,
+      profile: currentProfileName,
+      symbol: getWaveProfile(currentProfileName).symbol,
+    },
+    next: [
+      ...(schedule[currentWave + 1] ? [{
+        wave: currentWave + 1,
+        profile: schedule[currentWave + 1],
+        symbol: getWaveProfile(schedule[currentWave + 1]).symbol,
+      }] : []),
+      ...(schedule[currentWave + 2] ? [{
+        wave: currentWave + 2,
+        profile: schedule[currentWave + 2],
+        symbol: getWaveProfile(schedule[currentWave + 2]).symbol,
+      }] : []),
+    ],
+  };
+
   return Response.json({
     grid,
     state: {
@@ -64,6 +88,7 @@ export default async function handler(req: Request): Promise<Response> {
       gameOver: gameState.gameOver,
       towers: gameState.towers,
     },
+    wavePreview,
   }, {
     headers: { 'Access-Control-Allow-Origin': '*' },
   });

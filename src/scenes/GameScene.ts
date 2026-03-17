@@ -11,6 +11,7 @@ import {
 import { layout } from '../layout';
 import { generateRandomPath } from '../logic/MapGenerator';
 import { generateWave } from '../logic/WaveGenerator';
+import { generateWaveSchedule, getWaveProfile, WaveProfileName } from '../logic/WaveSchedule';
 import { mulberry32 } from '../logic/seedRng';
 import { getDailySeed, getDailySeedLabel } from '../logic/dailySeed';
 import { Leaderboard, SessionData, ActivePlayers } from '../logic/Leaderboard';
@@ -52,8 +53,10 @@ export class GameScene extends Phaser.Scene {
   private moneyText!: Phaser.GameObjects.Text;
   private livesText!: Phaser.GameObjects.Text;
   private waveText!: Phaser.GameObjects.Text;
+  private waveProfileText!: Phaser.GameObjects.Text;
   private scoreText!: Phaser.GameObjects.Text;
   private messageText!: Phaser.GameObjects.Text;
+  private waveSchedule: WaveProfileName[] = [];
 
   private ladybugBtn!: ArcadeBtn;
   private mantisBtn!: ArcadeBtn;
@@ -125,9 +128,11 @@ export class GameScene extends Phaser.Scene {
     this.seedLabel = getDailySeedLabel();
     const rng = mulberry32(this.seed);
     const waypoints = generateRandomPath(GRID_COLS, GRID_ROWS, rng);
+    this.waveSchedule = generateWaveSchedule(this.seed);
+    const waveGen = (n: number) => generateWave(n, this.waveSchedule[n] ?? 'balanced');
     this.engine = new GameEngine(
       GRID_COLS, GRID_ROWS, TILE_SIZE,
-      waypoints, generateWave,
+      waypoints, waveGen,
       STARTING_MONEY, STARTING_LIVES,
     );
 
@@ -191,6 +196,7 @@ export class GameScene extends Phaser.Scene {
       this.moneyText = this.add.text(200, 14, '', bs('#00ff66')).setOrigin(0, 0.5).setDepth(12);
       this.livesText = this.add.text(290, 14, '', bs('#ff4444')).setOrigin(0, 0.5).setDepth(12);
       this.waveText = this.add.text(380, 14, '', bs('#00ffff')).setOrigin(0, 0.5).setDepth(12);
+      this.waveProfileText = this.add.text(0, 0, '').setVisible(false);
       this.scoreText = this.add.text(490, 14, '', bs('#ffff00')).setOrigin(0, 0.5).setDepth(12);
 
       const cs = (color: string): Phaser.Types.GameObjects.Text.TextStyle => ({
@@ -300,6 +306,11 @@ export class GameScene extends Phaser.Scene {
       this.livesText = this.add.text(230, statsY, '', s('#ff4444'));
       this.waveText = this.add.text(350, statsY, '', s('#00ffff'));
       this.scoreText = this.add.text(480, statsY, '', s('#ffff00'));
+
+      // Wave profile preview — small text between stats row and separator
+      this.waveProfileText = this.add.text(350, GAME_HEIGHT + 17, '', {
+        fontSize: '7px', color: '#559999', fontFamily: ARCADE_FONT,
+      });
     }
 
     // Action buttons — computed layout
@@ -788,8 +799,20 @@ export class GameScene extends Phaser.Scene {
   private updateUI(): void {
     this.moneyText.setText(`$${this.engine.state.money}`);
     this.livesText.setText(`HP ${this.engine.state.lives}`);
-    this.waveText.setText(`WAVE ${this.engine.waveManager.currentWave}`);
+    const currentWave = this.engine.waveManager.currentWave;
+    const currentProfile = getWaveProfile(this.waveSchedule[currentWave] ?? 'balanced');
+    this.waveText.setText(`WAVE ${currentWave} ${currentProfile.symbol}`);
     this.scoreText.setText(`${this.engine.state.score} PTS`);
+
+    // Desktop only: show next 2 wave profile previews
+    if (!layout.isMobile) {
+      const next1 = this.waveSchedule[currentWave + 1];
+      const next2 = this.waveSchedule[currentWave + 2];
+      let preview = '';
+      if (next1) preview += `▶${getWaveProfile(next1).symbol}`;
+      if (next2) preview += ` ▶${getWaveProfile(next2).symbol}`;
+      this.waveProfileText.setText(preview);
+    }
   }
 
   private updateActiveCounts(counts: ActivePlayers): void {
