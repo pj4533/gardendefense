@@ -83,14 +83,26 @@
 
     #agent-link {
       position: fixed;
-      bottom: 6px;
+      bottom: 14px;
       left: 50%;
       transform: translateX(-50%);
-      color: #556666;
-      font-size: 10px;
+      color: #4a7a7a;
+      font-size: 9px;
       font-family: monospace;
       text-decoration: none;
+      letter-spacing: 0.18em;
+      text-transform: lowercase;
+      opacity: 0.65;
       z-index: 20;
+      padding: 4px 10px;
+      border-top: 1px solid #2a4a4a;
+      transition: opacity 0.3s ease, color 0.3s ease;
+      white-space: nowrap;
+    }
+
+    #agent-link:hover {
+      opacity: 1;
+      color: #5ecece;
     }
 
     canvas {
